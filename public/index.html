@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photography</title>
+  <meta name="description" content="Photography portfolio">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="site-name" href="/">Photography</a>
+  </header>
+
+  <main>
+    <h1 class="visually-hidden">Sets</h1>
+    <!-- home.js fills this list with one card per set. -->
+    <ul class="set-grid" id="set-grid" aria-live="polite"></ul>
+    <p class="status" id="status">Loading...</p>
+  </main>
+
+  <script src="/js/home.js" type="module"></script>
+</body>
+</html>

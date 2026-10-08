@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- functions/sets/[slug].js fills in these four tags for each set. -->
+  <title>Photography</title>
+  <meta property="og:title" content="">
+  <meta property="og:description" content="">
+  <meta property="og:image" content="">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="site-name" href="/">Photography</a>
+  </header>
+
+  <main>
+    <a class="back-link" href="/">All sets</a>
+    <h1 id="set-title"></h1>
+    <p class="set-description" id="set-description"></p>
+    <!-- set.js fills this list with one thumbnail per photo. -->
+    <ul class="photo-grid" id="photo-grid"></ul>
+    <p class="status" id="status">Loading...</p>
+  </main>
+
+  <script src="/js/set.js" type="module"></script>
+</body>
+</html>

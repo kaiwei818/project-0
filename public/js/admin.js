@@ -83,6 +83,12 @@ function createSetRow(set) {
   const link = document.createElement("a");
   link.href = `/admin/set?id=${set.id}`;
   link.textContent = set.title;
+  if (!set.published) {
+    const badge = document.createElement("span");
+    badge.className = "draft-badge";
+    badge.textContent = "Draft";
+    link.append(" ", badge);
+  }
   const count = document.createElement("span");
   count.className = "muted";
   count.textContent = `${set.photo_count} ${set.photo_count === 1 ? "photo" : "photos"}`;
@@ -162,7 +168,7 @@ document.getElementById("new-set-form").addEventListener("submit", async (event)
     error.textContent = data.error || "Could not create the set.";
     return;
   }
-  // Go straight to the new set's upload page.
+  // Go straight to the new set's page. It starts as a draft.
   location.href = `/admin/set?id=${data.id}`;
 });
 

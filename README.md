@@ -1,10 +1,11 @@
-# Photography Portfolio
+# winstonlens
 
-A photography portfolio that runs on Cloudflare's free tier:
+Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
 
 - **Public gallery:** sets (albums) of photos, a full-screen viewer with swipe and
   keyboard controls, and link previews when you share a set.
-- **Private admin area** at `/admin`: create, rename, reorder, and delete sets;
+- **Private admin area** at `/admin`: create sets as private drafts, publish,
+  rename, reorder, and delete them;
   upload photos (shrunk and watermarked in your browser, so originals never leave
   your computer); reorder photos, choose covers, and write captions and
   descriptions; watch your storage use, overall and per set.
@@ -18,6 +19,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 3. [Creating sets and uploading photos](docs/lessons/03-uploads.md)
 4. [Photo viewer, deleting, and sharper photos](docs/lessons/04-viewer-delete-quality.md)
 5. [Managing photos, security, and going live](docs/lessons/05-manage-secure-deploy.md)
+6. [Branding, drafts, search engines, and the 404 page](docs/lessons/06-brand-drafts-seo.md)
 
 ---
 
@@ -82,6 +84,9 @@ After any code change, run `npm run deploy` again. If a change adds a file to
 
 ## Settings
 
+The site name, owner, and description are in `lib/site.js`. Change them there and
+deploy; every page picks them up.
+
 | Name | Where | Required | What it is |
 |------|-------|----------|------------|
 | `ADMIN_PASSWORD_HASH` | `.dev.vars` locally; `wrangler pages secret put` live | Yes | Your admin password, hashed. Made by `npm run hash-password`. |
@@ -111,13 +116,16 @@ public/                  Files sent to browsers as they are
   admin/                   Admin pages (protected by functions/admin/_middleware.js)
   js/                      Browser code (image-worker.js shrinks photos; lightbox.js is the viewer)
   css/style.css            All styling, light and dark mode
-  _headers                 Security headers for the files above
+  404.html                 The "page not found" page
 functions/               Server code; the file path is the web address
+  _middleware.js           Runs for every request: security headers, site name
+  index.js                 Home page link-preview tags
+  robots.txt.js, sitemap.xml.js   For search engines
   api/sets/                Public data (read only)
   api/admin/               Admin data; _middleware.js checks the login for all of it
   img/[[key]].js           Serves images from R2, with hotlink protection
   sets/[slug].js           Set pages with link-preview tags
-lib/                     Shared server code: login, slugs, ordering, security headers
+lib/                     Shared server code: site name (site.js), login, slugs, ordering, security headers, page tags
 migrations/              Database tables, one numbered file per change
 scripts/                 hash-password and seed-local
 ```
@@ -126,8 +134,9 @@ scripts/                 hash-password and seed-local
 
 Public (read only):
 
-- `GET /api/sets`: all sets with cover and photo count
-- `GET /api/sets/:slug`: one set with its photos
+- `GET /api/sets`: all published sets with cover and photo count
+- `GET /api/sets/:slug`: one set with its photos (drafts only when logged in)
+- `GET /robots.txt`, `GET /sitemap.xml`: for search engines
 - `GET /img/:key`: an image file (refuses other websites)
 
 Admin (login required; writes must come from this site):
@@ -136,7 +145,7 @@ Admin (login required; writes must come from this site):
 - `GET /api/admin/stats`: storage used, in total and per set
 - `GET /api/admin/sets`, `POST /api/admin/sets`
 - `PATCH /api/admin/sets/order`: order of sets
-- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover)
+- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover, published)
 - `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
 - `POST /api/admin/photos`: upload one photo (thumbnail and display version)
 - `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, delete

@@ -2,7 +2,6 @@
 // are sent to the login page instead.
 
 import { isLoggedIn } from "../../lib/auth.js";
-import { withSecurityHeaders } from "../../lib/security.js";
 
 const LOGIN_PAGES = ["/admin/login", "/admin/login.html"];
 
@@ -12,7 +11,7 @@ export async function onRequest({ request, env, next }) {
 
   if (LOGIN_PAGES.includes(url.pathname)) {
     // Already logged in? Skip the login page.
-    return loggedIn ? Response.redirect(new URL("/admin/", url), 302) : withSecurityHeaders(await next());
+    return loggedIn ? Response.redirect(new URL("/admin/", url), 302) : next();
   }
 
   if (!loggedIn) {
@@ -21,7 +20,8 @@ export async function onRequest({ request, env, next }) {
 
   // Tell browsers not to keep a saved copy of admin pages (so "Back" after
   // logging out shows nothing).
-  const response = withSecurityHeaders(await next());
+  const original = await next();
+  const response = new Response(original.body, original); // a copy we can change
   response.headers.set("Cache-Control", "no-store");
   return response;
 }

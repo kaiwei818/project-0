@@ -1,12 +1,12 @@
 // GET    /api/admin/sets/:id   one set and its photos, for the admin set page
-// PATCH  /api/admin/sets/:id   change title, description, slug, or cover photo
+// PATCH  /api/admin/sets/:id   change title, description, slug, cover photo, or published
 // DELETE /api/admin/sets/:id   delete the set, its photos, and their files
 
 import { uniqueSlug } from "../../../../lib/slug.js";
 
 export async function onRequestGet({ env, params }) {
   const set = await env.DB.prepare(
-    `SELECT id, slug, title, description, cover_photo_id FROM sets WHERE id = ?`
+    `SELECT id, slug, title, description, cover_photo_id, published FROM sets WHERE id = ?`
   ).bind(Number(params.id)).first();
 
   if (!set) return Response.json({ error: "Set not found" }, { status: 404 });
@@ -19,7 +19,7 @@ export async function onRequestGet({ env, params }) {
   return Response.json({ ...set, photos });
 }
 
-// Body: any of {"title", "description", "slug", "cover_photo_id"}.
+// Body: any of {"title", "description", "slug", "cover_photo_id", "published"}.
 // Fields that are left out stay as they are.
 export async function onRequestPatch({ request, env, params }) {
   const setId = Number(params.id);
@@ -51,6 +51,10 @@ export async function onRequestPatch({ request, env, params }) {
     changes.cover_photo_id = coverId;
   }
 
+  if ("published" in body) {
+    changes.published = body.published ? 1 : 0; // true = everyone sees it, false = draft
+  }
+
   const columns = Object.keys(changes);
   if (columns.length === 0) return Response.json({ error: "Nothing to change." }, { status: 400 });
 
@@ -58,7 +62,7 @@ export async function onRequestPatch({ request, env, params }) {
   // building the SQL text from them is safe. The values still go through bind().
   const updated = await env.DB.prepare(
     `UPDATE sets SET ${columns.map((c) => `${c} = ?`).join(", ")} WHERE id = ?
-     RETURNING id, slug, title, description, cover_photo_id`
+     RETURNING id, slug, title, description, cover_photo_id, published`
   ).bind(...Object.values(changes), setId).first();
 
   return Response.json(updated);

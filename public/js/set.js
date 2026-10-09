@@ -17,6 +17,8 @@ async function loadSet() {
   if (!response.ok) throw new Error(`API returned ${response.status}`);
 
   const set = await response.json();
+  // Only you (logged in) can load a draft; remind yourself it is not public yet.
+  document.getElementById("draft-banner").hidden = Boolean(set.published);
   document.getElementById("set-title").textContent = set.title;
   document.getElementById("set-description").textContent = set.description;
 

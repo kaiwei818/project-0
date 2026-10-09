@@ -1,40 +1,38 @@
 // GET /sets/:slug
-// Serves public/set.html, but first fills in the page title and Open Graph tags
-// for this set. Social sites (iMessage, Facebook, LINE) do not run JavaScript, so
-// the link preview needs these tags already in the HTML the server sends.
+// Serves public/set.html with this set's title and link-preview tags filled in.
+// Drafts are only shown to you (when logged in), as a preview. Everyone else,
+// and anyone asking for a set that does not exist, gets the "not found" page.
 
-import { withSecurityHeaders } from "../../lib/security.js";
+import { isLoggedIn } from "../../lib/auth.js";
+import { withPageMeta } from "../../lib/meta.js";
 
 export async function onRequestGet({ request, env, params }) {
   const set = await env.DB.prepare(
-    `SELECT s.id, s.title, s.description,
+    `SELECT s.id, s.title, s.description, s.published,
             COALESCE(
-              (SELECT display_key FROM photos WHERE id = s.cover_photo_id),
-              (SELECT display_key FROM photos WHERE set_id = s.id
+              (SELECT thumb_key FROM photos WHERE id = s.cover_photo_id),
+              (SELECT thumb_key FROM photos WHERE set_id = s.id
                  ORDER BY sort_order, id LIMIT 1)
             ) AS cover_key
      FROM sets s WHERE s.slug = ?`
   ).bind(decodeSlug(params.slug)).first();
 
-  // Fetch the static set.html file from the public folder.
-  const page = await env.ASSETS.fetch(new URL("/set.html", request.url));
-
-  if (!set) {
-    return withSecurityHeaders(new Response(page.body, { status: 404, headers: page.headers }));
+  const visible = set && (set.published || (await isLoggedIn(request, env)));
+  if (!visible) {
+    const notFound = await env.ASSETS.fetch(new URL("/404", request.url));
+    return new Response(notFound.body, { status: 404, headers: notFound.headers });
   }
 
-  const origin = new URL(request.url).origin;
-  const title = `${set.title} | Photography`;
-  const image = set.cover_key ? `${origin}/img/${set.cover_key}` : "";
-
-  // HTMLRewriter edits the HTML as it streams by. setAttribute escapes the
-  // values for us, so a title with quotes in it cannot break the page.
-  return withSecurityHeaders(new HTMLRewriter()
-    .on("title", { element(el) { el.setInnerContent(title); } })
-    .on('meta[property="og:title"]', { element(el) { el.setAttribute("content", title); } })
-    .on('meta[property="og:description"]', { element(el) { el.setAttribute("content", set.description); } })
-    .on('meta[property="og:image"]', { element(el) { el.setAttribute("content", image); } })
-    .transform(page));
+  const url = new URL(request.url);
+  const page = await env.ASSETS.fetch(new URL("/set.html", url));
+  return withPageMeta(page, {
+    title: set.title,
+    description: set.description,
+    url: url.origin + url.pathname,
+    // The 1200 px thumbnail, not the 3000 px version: link previews are small,
+    // and some apps give up on large images.
+    image: set.cover_key ? `${url.origin}/img/${set.cover_key}` : "",
+  });
 }
 
 // The URL arrives still encoded: "台北夜景" comes in as "%E5%8F%B0...".

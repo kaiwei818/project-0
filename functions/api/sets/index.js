@@ -1,5 +1,6 @@
 // GET /api/sets
-// Returns every set for the home page: title, slug, cover thumbnail, and photo count.
+// Returns every published set for the home page: title, slug, cover thumbnail,
+// and photo count. Drafts are left out.
 //
 // How Pages Functions work: the file path decides the URL.
 // functions/api/sets/index.js  ->  /api/sets
@@ -17,6 +18,7 @@ export async function onRequestGet({ env }) {
             ) AS cover_thumb_key
      FROM sets s
      LEFT JOIN photos p ON p.set_id = s.id
+     WHERE s.published = 1
      GROUP BY s.id
      ORDER BY s.sort_order, s.id`
   ).all();

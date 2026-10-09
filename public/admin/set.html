@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Upload | Admin</title>
+  <title data-page="Set · Admin"></title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <header class="site-header admin-header">
-    <a class="site-name" href="/admin/">Admin</a>
+    <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
     <nav>
       <a id="view-link" href="/" target="_blank">View set</a>
     </nav>
@@ -18,6 +18,16 @@
   <main>
     <a class="back-link" href="/admin/">All sets</a>
     <h1 id="set-title">Loading...</h1>
+
+    <!-- Draft or published -->
+    <section class="panel publish-panel" aria-labelledby="publish-heading">
+      <h2 id="publish-heading">Visibility</h2>
+      <p id="publish-text"></p>
+      <div class="actions">
+        <button type="button" id="publish-button"></button>
+        <a id="preview-link" href="/" target="_blank">Preview</a>
+      </div>
+    </section>
 
     <!-- Set details: title, web address, description -->
     <form class="panel" id="details-form" aria-labelledby="details-heading">

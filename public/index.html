@@ -3,13 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Photography</title>
-  <meta name="description" content="Photography portfolio">
+  <!-- Text in data-site="..." elements and the title come from lib/site.js (see functions/_middleware.js). -->
+  <title data-page=""></title>
+  <!-- Link-preview tags, filled in by functions/index.js -->
+  <meta name="description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="">
+  <meta property="og:title" content="">
+  <meta property="og:description" content="">
+  <meta property="og:url" content="">
+  <meta property="og:image" content="">
+  <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <header class="site-header">
-    <a class="site-name" href="/">Photography</a>
+    <a class="site-name" href="/" data-site="name"></a>
   </header>
 
   <main>
@@ -18,6 +27,10 @@
     <ul class="set-grid" id="set-grid" aria-live="polite"></ul>
     <p class="status" id="status">Loading...</p>
   </main>
+
+  <footer class="site-footer">
+    © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
+  </footer>
 
   <script src="/js/home.js" type="module"></script>
 </body>

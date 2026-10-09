@@ -598,3 +598,56 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 .storage-list a { overflow-wrap: anywhere; }
 .storage-size { color: var(--muted); white-space: nowrap; }
 .storage-list .meter { grid-column: 1 / -1; height: 6px; }
+
+/* ---------- Footer ---------- */
+.site-footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Drafts ---------- */
+.draft-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.draft-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #92400e;
+}
+.publish-panel .actions { align-items: center; margin-bottom: 0; }
+#set-title[data-state="draft"]::after {
+  content: "Draft";
+  margin-left: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+/* ---------- Not found page ---------- */
+.not-found { text-align: center; padding-top: 10vh; min-height: 50vh; }
+.not-found-code { font-size: 4rem; font-weight: 700; margin: 0; color: var(--border); }
+.not-found h1 { margin-top: 0; }
+.button-link {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  text-decoration: none;
+}

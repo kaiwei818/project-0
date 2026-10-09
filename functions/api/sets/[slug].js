@@ -1,13 +1,16 @@
 // GET /api/sets/:slug
 // Returns one set plus all of its photos, in order.
 // [slug] in the file name means "any value here", available as params.slug.
+// Drafts are only returned to you when logged in (for the preview).
 
-export async function onRequestGet({ env, params }) {
+import { isLoggedIn } from "../../../lib/auth.js";
+
+export async function onRequestGet({ request, env, params }) {
   const set = await env.DB.prepare(
-    `SELECT id, slug, title, description FROM sets WHERE slug = ?`
+    `SELECT id, slug, title, description, published FROM sets WHERE slug = ?`
   ).bind(decodeSlug(params.slug)).first();
 
-  if (!set) {
+  if (!set || (!set.published && !(await isLoggedIn(request, env)))) {
     return Response.json({ error: "Set not found" }, { status: 404 });
   }
 

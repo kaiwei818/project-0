@@ -16,6 +16,7 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const setId = Number(new URLSearchParams(location.search).get("id"));
 
 const $ = (id) => document.getElementById(id);
+const baseTitle = document.title; // "Set · Admin | winstonlens"
 const wmOn = $("wm-on");
 const wmText = $("wm-text");
 
@@ -45,8 +46,9 @@ async function loadSet() {
 
 function showDetails() {
   $("set-title").textContent = set.title;
-  document.title = `${set.title} | Admin`;
-  $("view-link").href = `/sets/${encodeURIComponent(set.slug)}`;
+  document.title = baseTitle.replace(/^Set/, set.title);
+  $("view-link").href = $("preview-link").href = `/sets/${encodeURIComponent(set.slug)}`;
+  showVisibility();
   $("details-title").value = set.title;
   $("details-slug").value = set.slug;
   $("details-description").value = set.description;
@@ -73,6 +75,33 @@ $("details-form").addEventListener("submit", async (event) => {
   Object.assign(set, data);
   showDetails(); // shows the cleaned-up web address, e.g. "My Trip!" -> "my-trip"
   flash(status, "Saved");
+});
+
+// ---------- Draft / published ----------
+
+function showVisibility() {
+  const published = Boolean(set.published);
+  $("publish-text").textContent = published
+    ? "Published: everyone can see this set."
+    : "Draft: only you can see this set (use Preview while logged in). Visitors and search engines cannot.";
+  $("publish-button").textContent = published ? "Unpublish (back to draft)" : "Publish";
+  $("publish-button").className = published ? "button-secondary" : "";
+  $("set-title").dataset.state = published ? "published" : "draft";
+}
+
+$("publish-button").addEventListener("click", async () => {
+  const publish = !set.published;
+  if (publish && set.photos.length === 0 &&
+      !confirm("This set has no photos yet. Publish it anyway?")) return;
+
+  const response = await fetch(`/api/admin/sets/${setId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ published: publish }),
+  });
+  if (!response.ok) return alert("Could not change the visibility. Please try again.");
+  Object.assign(set, await response.json());
+  showVisibility();
 });
 
 // Shows a short message like "Saved" next to a field, then fades it.

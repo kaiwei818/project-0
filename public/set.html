@@ -3,19 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- functions/sets/[slug].js fills in these four tags for each set. -->
-  <title>Photography</title>
+  <!-- Text in data-site="..." elements and the title come from lib/site.js (see functions/_middleware.js). -->
+  <title data-page=""></title>
+  <!-- Link-preview tags, filled in by functions/sets/[slug].js -->
+  <meta name="description" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="">
   <meta property="og:title" content="">
   <meta property="og:description" content="">
+  <meta property="og:url" content="">
   <meta property="og:image" content="">
+  <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <header class="site-header">
-    <a class="site-name" href="/">Photography</a>
+    <a class="site-name" href="/" data-site="name"></a>
   </header>
 
   <main>
+    <!-- Shown only when you, logged in, preview a set that is still a draft. -->
+    <p class="draft-banner" id="draft-banner" hidden>
+      Draft preview: only you can see this set. Publish it from the admin page.
+    </p>
     <a class="back-link" href="/">All sets</a>
     <h1 id="set-title"></h1>
     <p class="set-description" id="set-description"></p>
@@ -23,6 +33,10 @@
     <ul class="photo-grid" id="photo-grid"></ul>
     <p class="status" id="status">Loading...</p>
   </main>
+
+  <footer class="site-footer">
+    © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
+  </footer>
 
   <!-- The full-screen viewer. Hidden until a photo is tapped (see js/lightbox.js). -->
   <dialog class="lightbox" id="lightbox" aria-label="Photo viewer">

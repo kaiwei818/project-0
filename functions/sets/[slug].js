@@ -1,21 +1,17 @@
 // GET /sets/:slug
-// Serves public/set.html with this set's title and link-preview tags filled in.
+// Serves public/set.html with this set's title, description, and photo grid
+// already in the page (built here on the server, so Google and link previews
+// see the real content), plus the link-preview tags.
 // Drafts are only shown to you (when logged in), as a preview. Everyone else,
 // and anyone asking for a set that does not exist, gets the "not found" page.
 
 import { isLoggedIn } from "../../lib/auth.js";
 import { withPageMeta } from "../../lib/meta.js";
+import { decodeSlug, setWithPhotos } from "../../lib/queries.js";
+import { jsonForPage, photoThumbHtml } from "../../lib/render.js";
 
 export async function onRequestGet({ request, env, params }) {
-  const set = await env.DB.prepare(
-    `SELECT s.id, s.title, s.description, s.published,
-            COALESCE(
-              (SELECT thumb_key FROM photos WHERE id = s.cover_photo_id),
-              (SELECT thumb_key FROM photos WHERE set_id = s.id
-                 ORDER BY sort_order, id LIMIT 1)
-            ) AS cover_key
-     FROM sets s WHERE s.slug = ?`
-  ).bind(decodeSlug(params.slug)).first();
+  const set = await setWithPhotos(env, decodeSlug(params.slug));
 
   const visible = set && (set.published || (await isLoggedIn(request, env)));
   if (!visible) {
@@ -25,22 +21,34 @@ export async function onRequestGet({ request, env, params }) {
 
   const url = new URL(request.url);
   const page = await env.ASSETS.fetch(new URL("/set.html", url));
-  return withPageMeta(page, {
+
+  const filled = new HTMLRewriter()
+    .on("#set-title", { element(el) { el.setInnerContent(set.title); } }) // plain text: escaped for us
+    .on("#set-description", {
+      element(el) {
+        if (set.description) el.setInnerContent(set.description);
+        else el.remove();
+      },
+    })
+    .on("#photo-grid", { element(el) { el.setInnerContent(set.photos.map(photoThumbHtml).join(""), { html: true }); } })
+    .on("#status", {
+      element(el) {
+        if (set.photos.length) el.remove();
+        else el.setInnerContent("This set has no photos yet.");
+      },
+    })
+    // Only you can open a draft; remind yourself it is not public yet.
+    .on("#draft-banner", { element(el) { if (!set.published) el.removeAttribute("hidden"); } })
+    // The photo details the viewer needs, for set.js. No second request needed.
+    .on("#set-data", { element(el) { el.setInnerContent(jsonForPage(set.photos), { html: true }); } })
+    .transform(page);
+
+  return withPageMeta(filled, {
     title: set.title,
     description: set.description,
     url: url.origin + url.pathname,
     // The 1200 px thumbnail, not the 3000 px version: link previews are small,
     // and some apps give up on large images.
-    image: set.cover_key ? `${url.origin}/img/${set.cover_key}` : "",
+    image: set.cover_thumb_key ? `${url.origin}/img/${set.cover_thumb_key}` : "",
   });
-}
-
-// The URL arrives still encoded: "台北夜景" comes in as "%E5%8F%B0...".
-// Decode it so it matches the slug stored in the database.
-function decodeSlug(raw) {
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return raw; // a broken "%" sequence: just look up the text as it is
-  }
 }

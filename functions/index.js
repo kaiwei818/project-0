@@ -1,23 +1,32 @@
 // GET /
-// Serves public/index.html with link-preview tags, so sharing your home page
-// shows the cover of your first set.
+// Serves public/index.html with the set cards already in it, plus link-preview
+// tags (sharing your home page shows the cover of your first set).
+//
+// The cards are built here on the server, not in the browser, so the very first
+// version of the page has your real content. Google judges pages largely by that
+// first version; an empty "Loading..." page gets marked as a "Soft 404".
 
 import { withPageMeta } from "../lib/meta.js";
+import { publishedSets } from "../lib/queries.js";
+import { setCardHtml } from "../lib/render.js";
 
 export async function onRequestGet({ request, env }) {
-  const first = await env.DB.prepare(
-    `SELECT COALESCE(
-              (SELECT thumb_key FROM photos WHERE id = s.cover_photo_id),
-              (SELECT thumb_key FROM photos WHERE set_id = s.id ORDER BY sort_order, id LIMIT 1)
-            ) AS cover_key
-     FROM sets s WHERE s.published = 1
-     ORDER BY s.sort_order, s.id LIMIT 1`
-  ).first();
-
+  const sets = await publishedSets(env);
   const url = new URL(request.url);
   const page = await env.ASSETS.fetch(new URL("/", url));
-  return withPageMeta(page, {
+
+  const filled = new HTMLRewriter()
+    .on("#set-grid", { element(el) { el.setInnerContent(sets.map(setCardHtml).join(""), { html: true }); } })
+    .on("#status", {
+      element(el) {
+        if (sets.length) el.remove();
+        else el.setInnerContent("No photo sets yet. Please come back soon.");
+      },
+    })
+    .transform(page);
+
+  return withPageMeta(filled, {
     url: url.origin + "/",
-    image: first?.cover_key ? `${url.origin}/img/${first.cover_key}` : "",
+    image: sets[0]?.cover_thumb_key ? `${url.origin}/img/${sets[0].cover_thumb_key}` : "",
   });
 }

@@ -14,6 +14,7 @@
   <meta property="og:url" content="">
   <meta property="og:image" content="">
   <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -33,9 +34,11 @@
     <a class="back-link" href="/">All sets</a>
     <h1 id="set-title"></h1>
     <p class="set-description" id="set-description"></p>
-    <!-- set.js fills this list with one thumbnail per photo. -->
+    <!-- functions/sets/[slug].js fills in the title, description, and photos. -->
     <ul class="photo-grid" id="photo-grid"></ul>
-    <p class="status" id="status">Loading...</p>
+    <p class="status" id="status"></p>
+    <!-- The photo details for the viewer, as data (browsers never run this). -->
+    <script type="application/json" id="set-data">[]</script>
   </main>
 
   <footer class="site-footer">

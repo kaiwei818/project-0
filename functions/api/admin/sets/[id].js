@@ -1,12 +1,12 @@
 // GET    /api/admin/sets/:id   one set and its photos, for the admin set page
-// PATCH  /api/admin/sets/:id   change title, description, slug, cover photo, published, or categories
+// PATCH  /api/admin/sets/:id   change title, description, date, slug, cover photo, published, or categories
 // DELETE /api/admin/sets/:id   delete the set, its photos, and their files
 
 import { uniqueSlug } from "../../../../lib/slug.js";
 
 export async function onRequestGet({ env, params }) {
   const set = await env.DB.prepare(
-    `SELECT id, slug, title, description, cover_photo_id, published FROM sets WHERE id = ?`
+    `SELECT id, slug, title, description, shot_date, cover_photo_id, published FROM sets WHERE id = ?`
   ).bind(Number(params.id)).first();
 
   if (!set) return Response.json({ error: "Set not found" }, { status: 404 });
@@ -24,7 +24,7 @@ export async function onRequestGet({ env, params }) {
   return Response.json({ ...set, photos, category_ids: categories.map((c) => c.category_id) });
 }
 
-// Body: any of {"title", "description", "slug", "cover_photo_id", "published",
+// Body: any of {"title", "description", "shot_date" ("YYYY-MM-DD" or ""), "slug", "cover_photo_id", "published",
 // "category_ids": [..]}.
 // Fields that are left out stay as they are.
 export async function onRequestPatch({ request, env, params }) {
@@ -41,6 +41,12 @@ export async function onRequestPatch({ request, env, params }) {
   }
   if ("description" in body) {
     changes.description = String(body.description).trim().slice(0, 2000);
+  }
+  if ("shot_date" in body) {
+    changes.shot_date = String(body.shot_date ?? "").trim();
+    if (changes.shot_date && !/^\d{4}-\d{2}-\d{2}$/.test(changes.shot_date)) {
+      return Response.json({ error: "The date must look like 2026-03-15." }, { status: 400 });
+    }
   }
   if ("slug" in body) {
     // Clean it up the same way new slugs are made. If another set already uses
@@ -82,7 +88,7 @@ export async function onRequestPatch({ request, env, params }) {
   // building the SQL text from them is safe. The values still go through bind().
   const updated = await env.DB.prepare(
     `UPDATE sets SET ${columns.map((c) => `${c} = ?`).join(", ")} WHERE id = ?
-     RETURNING id, slug, title, description, cover_photo_id, published`
+     RETURNING id, slug, title, description, shot_date, cover_photo_id, published`
   ).bind(...Object.values(changes), setId).first();
 
   return Response.json(updated);

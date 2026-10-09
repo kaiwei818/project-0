@@ -7,8 +7,8 @@
 
 import { isLoggedIn } from "../../lib/auth.js";
 import { withPageMeta } from "../../lib/meta.js";
-import { decodeSlug, setWithPhotos } from "../../lib/queries.js";
-import { jsonForPage, photoThumbHtml } from "../../lib/render.js";
+import { decodeSlug, nextPublishedSet, setWithPhotos } from "../../lib/queries.js";
+import { jsonForPage, nextSetHtml, photoThumbHtml } from "../../lib/render.js";
 
 export async function onRequestGet({ request, env, params }) {
   const set = await setWithPhotos(env, decodeSlug(params.slug));
@@ -20,7 +20,11 @@ export async function onRequestGet({ request, env, params }) {
   }
 
   const url = new URL(request.url);
-  const page = await env.ASSETS.fetch(new URL("/set.html", url));
+  // The "Next set" link: only on published sets (a draft is not in the order yet).
+  const [page, next] = await Promise.all([
+    env.ASSETS.fetch(new URL("/set.html", url)),
+    set.published ? nextPublishedSet(env, set) : null,
+  ]);
 
   const filled = new HTMLRewriter()
     .on("#set-title", { element(el) { el.setInnerContent(set.title); } }) // plain text: escaped for us
@@ -41,6 +45,12 @@ export async function onRequestGet({ request, env, params }) {
     .on("#license-panel", {
       element(el) {
         if (set.published && set.photos.some((p) => p.downloadable)) el.removeAttribute("hidden");
+        else el.remove();
+      },
+    })
+    .on("#next-set", {
+      element(el) {
+        if (next) el.setInnerContent(nextSetHtml(next), { html: true });
         else el.remove();
       },
     })

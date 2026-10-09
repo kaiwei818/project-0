@@ -2,13 +2,15 @@
 
 Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
 
-- **Public gallery:** sets (albums) of photos, a full-screen viewer with swipe and
-  keyboard controls and camera details, category filters, an About page, link
+- **Public gallery:** a featured hero photo and large cover cards (title, date,
+  photo count), sets (albums) of photos, a full-screen viewer with swipe and
+  keyboard controls, camera details, and a slideshow, a "Next set" link, a light /
+  dark switch, category filters, an About page, link
   previews when you share a page, and images sized for each screen so phones load
   fast. Visitors with a license code you gave them can download clean copies.
 - **Private admin area** at `/admin`: create sets as private drafts, publish,
   rename, reorder, and delete them;
-  upload photos (shrunk and given a tiled watermark in your browser, so originals
+  upload photos (shrunk and watermarked in your browser, full or small style, so originals
   never leave your computer), optionally with a private clean copy for downloads;
   create license codes and categories; reorder photos, choose covers, and write captions and
   descriptions; watch your storage use, overall and per set.
@@ -27,6 +29,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 8. [Moving to your own domain](docs/lessons/08-custom-domain.md)
 9. [Fixing "Soft 404": pages that arrive complete](docs/lessons/09-server-rendered-pages.md)
 10. [License codes, categories, and the tiled watermark](docs/lessons/10-downloads-categories-watermark.md)
+11. [Hero, cover cards, dark mode, slideshow, and watermark styles](docs/lessons/11-hero-themes-slideshow.md)
 
 ---
 
@@ -125,7 +128,8 @@ public/                  Files sent to browsers as they are
   admin/                   Admin pages (protected by functions/admin/_middleware.js)
   about.html               The About page (filled in by functions/about.js)
   js/                      Browser code (image-worker.js shrinks photos, exif.js reads camera
-                           details, images.js picks image sizes, lightbox.js is the viewer)
+                           details, images.js picks image sizes, lightbox.js is the viewer
+                           and slideshow, theme.js is the light / dark switch)
   css/style.css            All styling, light and dark mode
   404.html                 The "page not found" page
 functions/               Server code; the file path is the web address
@@ -162,7 +166,7 @@ Admin (login required; writes must come from this site):
 - `GET /api/admin/stats`: storage used, in total and per set
 - `GET /api/admin/sets`, `POST /api/admin/sets`
 - `PATCH /api/admin/sets/order`: order of sets
-- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover, published, categories)
+- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, date, cover, published, categories)
 - `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
 - `POST /api/admin/photos`: upload one photo (all sizes, plus an optional private clean copy)
 - `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, remove clean copy, delete

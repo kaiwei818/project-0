@@ -37,13 +37,7 @@
       Draft preview: only you can see this set. Publish it from the admin page.
     </p>
     <a class="back-link" href="/">All sets</a>
-    <div class="set-heading">
-      <h1 id="set-title"></h1>
-      <!-- Shown by set.js when the set has photos: plays them full screen, one after another. -->
-      <button type="button" class="slideshow-button" id="slideshow-button" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Slideshow
-      </button>
-    </div>
+    <h1 id="set-title"></h1>
     <p class="set-description" id="set-description"></p>
     <!-- functions/sets/[slug].js fills in the title, description, and photos. -->
     <ul class="photo-grid" id="photo-grid"></ul>
@@ -60,9 +54,6 @@
       </form>
       <p class="form-error" id="license-error" role="alert"></p>
     </section>
-
-    <!-- A link to the next set (in home page order), filled in by functions/sets/[slug].js. -->
-    <nav class="next-set" id="next-set" aria-label="Next set"></nav>
 
     <!-- The photo details for the viewer, as data (browsers never run this). -->
     <script type="application/json" id="set-data">[]</script>
@@ -83,10 +74,6 @@
       <p class="lightbox-camera" id="lightbox-camera"></p>
     </div>
     <a class="lightbox-download" id="lightbox-download" hidden download>Download</a>
-    <button type="button" class="lightbox-button lightbox-play" id="lightbox-play" aria-label="Play slideshow" hidden>
-      <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-      <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
-    </button>
     <button type="button" class="lightbox-button lightbox-close" id="lightbox-close" aria-label="Close">×</button>
     <button type="button" class="lightbox-button lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
     <button type="button" class="lightbox-button lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>

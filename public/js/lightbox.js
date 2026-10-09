@@ -3,8 +3,6 @@
 // Open it by tapping a photo. Then:
 //   next / previous   swipe left or right, the arrow keys, or the < > buttons
 //   close             swipe down, Escape, the × button, or the phone's Back button
-//   slideshow         the play button (or the space bar) moves to the next photo
-//                     every few seconds; any other control pauses it
 //
 // It uses the built-in <dialog> element, which gives us for free: showing on top
 // of everything, closing on Escape, and keeping keyboard focus inside while open.
@@ -12,7 +10,6 @@
 import { img as imageUrl, viewerSrcset } from "./images.js";
 
 const SWIPE_DISTANCE = 50; // pixels a finger must travel to count as a swipe
-const SLIDE_SECONDS = 4;   // how long each photo stays on screen in a slideshow
 
 // downloadUrl(photo): optional; returns a download address for this photo, or ""
 // when it cannot be downloaded (no license code entered, or no clean copy).
@@ -26,10 +23,8 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   const download = document.getElementById("lightbox-download");
   const prevButton = document.getElementById("lightbox-prev");
   const nextButton = document.getElementById("lightbox-next");
-  const playButton = document.getElementById("lightbox-play");
   let index = 0;
   let returnFocusTo = null;
-  let slideTimer = null; // set while the slideshow is playing
 
   function show(newIndex) {
     index = (newIndex + photos.length) % photos.length; // wrap around at the ends
@@ -44,13 +39,6 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     large.onload = () => {
       if (photos[index] === photo) img.src = large.currentSrc || large.src; // still on this photo?
     };
-    if (slideTimer) {
-      scheduleSlide(); // a fresh full wait for every photo
-      // Restart the soft fade-in (see .lightbox.playing in style.css).
-      img.style.animation = "none";
-      void img.offsetWidth;
-      img.style.animation = "";
-    }
 
     caption.textContent = photo.caption;
     caption.hidden = !photo.caption;
@@ -62,7 +50,7 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     download.hidden = !href;
     if (href) download.href = href;
     const single = photos.length === 1;
-    prevButton.hidden = nextButton.hidden = playButton.hidden = single;
+    prevButton.hidden = nextButton.hidden = single;
 
     preload(index + 1);
     preload(index - 1);
@@ -83,45 +71,19 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     return large;
   }
 
-  // ---------- Slideshow ----------
-  function scheduleSlide() {
-    clearTimeout(slideTimer);
-    slideTimer = setTimeout(() => show(index + 1), SLIDE_SECONDS * 1000);
-  }
-
-  function play() {
-    if (photos.length < 2) return;
-    dialog.classList.add("playing"); // style.css hides the controls while playing
-    playButton.setAttribute("aria-label", "Pause slideshow");
-    scheduleSlide();
-  }
-
-  function pause() {
-    clearTimeout(slideTimer);
-    slideTimer = null;
-    dialog.classList.remove("playing");
-    playButton.setAttribute("aria-label", "Play slideshow");
-  }
-
-  playButton.addEventListener("click", () => (slideTimer ? pause() : play()));
-
-  // { slideshow: true } starts playing right away (the set page's Slideshow button).
-  function open(startIndex, opener, { slideshow = false } = {}) {
+  function open(startIndex, opener) {
     returnFocusTo = opener;
-    pause();
     show(startIndex);
     dialog.showModal();
     document.body.classList.add("no-scroll");
     // Add a history entry, so the phone's Back button closes the viewer
     // instead of leaving the page.
     history.pushState({ lightbox: true }, "");
-    if (slideshow) play();
   }
 
   // Every way of closing ends up here (through "popstate" or the dialog's
   // own "close" event), so the cleanup happens exactly once.
   function onClosed() {
-    pause();
     document.body.classList.remove("no-scroll");
     returnFocusTo?.focus(); // put keyboard users back where they were
   }
@@ -140,17 +102,12 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   });
 
   document.getElementById("lightbox-close").addEventListener("click", close);
-  // Moving by hand pauses the slideshow: the visitor wants to look.
-  prevButton.addEventListener("click", () => { pause(); show(index - 1); });
-  nextButton.addEventListener("click", () => { pause(); show(index + 1); });
+  prevButton.addEventListener("click", () => show(index - 1));
+  nextButton.addEventListener("click", () => show(index + 1));
 
   dialog.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowLeft") { pause(); show(index - 1); }
-    if (event.key === "ArrowRight") { pause(); show(index + 1); }
-    if (event.key === " " && event.target.tagName !== "BUTTON" && event.target.tagName !== "A") {
-      event.preventDefault(); // otherwise the space bar would scroll
-      slideTimer ? pause() : play();
-    }
+    if (event.key === "ArrowLeft") show(index - 1);
+    if (event.key === "ArrowRight") show(index + 1);
   });
 
   // Tapping the dark area around the photo closes the viewer.
@@ -169,7 +126,6 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     const dy = event.clientY - start.y;
     start = null;
     if (Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy)) {
-      pause();
       show(dx < 0 ? index + 1 : index - 1); // finger moved left: next photo
     } else if (dy > SWIPE_DISTANCE * 2 && Math.abs(dy) > Math.abs(dx)) {
       close(); // swipe down

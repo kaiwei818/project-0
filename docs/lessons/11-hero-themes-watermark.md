@@ -1,12 +1,11 @@
-# Lesson 11: Hero, cover cards, dark mode, slideshow, and watermark styles
+# Lesson 11: Hero, cover cards, dark mode, and watermark styles
 
 This lesson makes the site feel more like a photography portfolio:
 
 1. A big **hero** photo at the top of the home page.
 2. **Cover cards**: each set is a large photo with its title, date, and photo count.
 3. A **light / dark switch** in the header.
-4. A **slideshow** on every set page, and a **Next set** link at the end.
-5. A choice between a **full** and a **small** watermark when you upload.
+4. A choice between a **full** and a **small** watermark when you upload.
 
 ---
 
@@ -49,19 +48,7 @@ How it works (`public/js/theme.js`):
 - With no saved choice, the site still follows the device, including when it
   switches automatically at sunset.
 
-## Part C: Slideshow and Next set
-
-- The **Slideshow** button next to a set's title opens the viewer and moves to
-  the next photo every 4 seconds (`SLIDE_SECONDS` in `public/js/lightbox.js`).
-- In the viewer, the round **play / pause** button in the bottom-left corner,
-  or the **space bar**, starts and stops it. Swiping or using the arrows pauses
-  it, since the visitor wants to look at something.
-- While playing, the arrows fade out so only the photos show.
-- At the end of each set, **Next set** links to the following set in home page
-  order, with its cover. After the last set it goes back to the first.
-  (`nextPublishedSet` in `lib/queries.js`.) Drafts do not show it.
-
-## Part D: Full or small watermark
+## Part C: Full or small watermark
 
 On a set's admin page, "Watermark and downloads" now has a **Style** switch:
 

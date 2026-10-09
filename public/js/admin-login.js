@@ -1,4 +1,4 @@
-// Sends the password to the API. If it is right, the server sets the session
+// Sends the username and password to the API. If it is right, the server sets the session
 // cookie and we go to the dashboard. The cookie itself is invisible to this code.
 
 const form = document.getElementById("login-form");
@@ -14,7 +14,7 @@ form.addEventListener("submit", async (event) => {
     const response = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: form.password.value }),
+      body: JSON.stringify({ username: form.username.value, password: form.password.value }),
     });
 
     if (response.ok) {

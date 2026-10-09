@@ -66,13 +66,14 @@ Do these once, in this order. Lesson 5 explains each step in detail.
    npx wrangler r2 bucket create portfolio-images
    ```
 5. Deploy for the first time. If it asks questions, create the project as
-   `photo-portfolio` with `main` as the production branch:
+   `winstonlens` with `main` as the production branch:
    ```
    npm run deploy
    ```
-6. Store your admin password hash and session secret on Cloudflare.
-   `npm run hash-password` prints both values; paste each one when asked:
+6. Store your admin username, password hash, and session secret on Cloudflare.
+   `npm run hash-password` prints all three values; paste each one when asked:
    ```
+   npx wrangler pages secret put ADMIN_USERNAME
    npx wrangler pages secret put ADMIN_PASSWORD_HASH
    npx wrangler pages secret put SESSION_SECRET
    ```
@@ -92,7 +93,8 @@ deploy; every page picks them up.
 
 | Name | Where | Required | What it is |
 |------|-------|----------|------------|
-| `ADMIN_PASSWORD_HASH` | `.dev.vars` locally; `wrangler pages secret put` live | Yes | Your admin password, hashed. Made by `npm run hash-password`. |
+| `ADMIN_USERNAME` | `.dev.vars` locally; `wrangler pages secret put` live | Yes | Your admin login name, for example your email. Capital letters do not matter. |
+| `ADMIN_PASSWORD_HASH` | same | Yes | Your admin password, hashed. Made by `npm run hash-password`. |
 | `SESSION_SECRET` | same | Yes | Random text that signs login cookies. Changing it logs everyone out. |
 | `ALLOWED_HOSTS` | `[vars]` in `wrangler.toml` | No | Extra domain names allowed to show your images, comma separated. Only needed when the site has more than one domain. |
 | `DB` | `wrangler.toml` | Yes | The D1 database (`database_id` from step 2). |
@@ -105,7 +107,7 @@ Secrets never go in the code or on GitHub. `.dev.vars` is listed in `.gitignore`
 | Command | What it does |
 |---------|--------------|
 | `npm run dev` | Run the site locally at http://localhost:8788 |
-| `npm run hash-password` | Set the admin password |
+| `npm run hash-password` | Set the admin username and password |
 | `npm run db:migrate:local` | Apply database changes locally |
 | `npm run db:migrate:remote` | Apply database changes to the live site |
 | `npm run seed:local` | Replace local data with three sample sets |

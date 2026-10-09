@@ -156,3 +156,82 @@ a { color: inherit; }
 @media (max-width: 600px) {
   .photo-grid { --row-height: 160px; }
 }
+
+/* ---------- Admin ---------- */
+.muted { color: var(--muted); }
+
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: wait; }
+.button-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.login {
+  max-width: 360px;
+  padding-top: 15vh;
+}
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.form-error {
+  margin: 0;
+  min-height: 1.5em;
+  color: #dc2626;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.admin-header nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-card {
+  max-width: 480px;
+  padding: 20px 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.stat-card h2 { margin: 0 0 4px; font-size: 1rem; }
+.meter {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.meter-fill {
+  width: 0;
+  height: 100%;
+  background: var(--focus);
+}

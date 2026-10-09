@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Dashboard | Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header admin-header">
+    <a class="site-name" href="/admin/">Admin</a>
+    <nav>
+      <a href="/" target="_blank">View site</a>
+      <button type="button" id="logout" class="button-secondary">Log out</button>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Dashboard</h1>
+
+    <section class="stat-card" aria-labelledby="storage-heading">
+      <h2 id="storage-heading">Storage</h2>
+      <p id="storage-text">Loading...</p>
+      <div class="meter"><div class="meter-fill" id="storage-fill"></div></div>
+      <p class="muted" id="counts"></p>
+    </section>
+
+    <p class="muted">Creating sets and uploading photos arrive in the next lessons.</p>
+  </main>
+
+  <script src="/js/admin.js" type="module"></script>
+</body>
+</html>

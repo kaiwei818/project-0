@@ -1,18 +1,20 @@
 # Photography Portfolio
 
 A low-cost photography portfolio on Cloudflare's free tier: a public gallery of
-photo sets, plus (coming soon) a private admin area for uploading.
+photo sets, plus a private admin area at `/admin` (uploading is coming soon).
 The full plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 
 ## Learning guide
 
-Start here: [Lesson 1: How the site works, and running it on your Mac](docs/lessons/01-setup-and-gallery.md)
+1. [Lesson 1: How the site works, and running it on your Mac](docs/lessons/01-setup-and-gallery.md)
+2. [Lesson 2: The admin login](docs/lessons/02-admin-login.md)
 
 ## Quick start
 
 ```
 npm install
 npm run seed:local   # sample sets in a local database (no account needed)
+npm run hash-password  # choose your admin password (saved to .dev.vars)
 npm run dev          # open http://localhost:8788
 ```
 
@@ -21,7 +23,7 @@ npm run dev          # open http://localhost:8788
 - [x] 1. Scaffold project and Cloudflare Pages config
 - [x] 2. D1 schema and migrations; R2 binding
 - [x] 3. Public API and gallery pages with seed data
-- [ ] 4. Admin auth and protected routes
+- [x] 4. Admin auth and protected routes
 - [ ] 5. Upload flow (client-side resize, compression, watermark)
 - [ ] 6. Set and photo management
 - [ ] 7. Lightbox and responsive polish
@@ -34,6 +36,7 @@ npm run dev          # open http://localhost:8788
 |---------|--------------|
 | `npm run dev` | Run the site locally |
 | `npm run seed:local` | Reset local data to the sample sets |
+| `npm run hash-password` | Set the admin password |
 | `npm run db:migrate:local` | Apply database migrations locally |
 | `npm run db:migrate:remote` | Apply database migrations to Cloudflare |
 | `npm run deploy` | Publish to Cloudflare Pages |

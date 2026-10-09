@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Log in | Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <main class="login">
+    <h1>Admin login</h1>
+    <form id="login-form" class="card-form">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+      <button type="submit">Log in</button>
+      <!-- role="alert" makes screen readers announce errors as soon as they appear. -->
+      <p class="form-error" id="error" role="alert"></p>
+    </form>
+  </main>
+  <script src="/js/admin-login.js" type="module"></script>
+</body>
+</html>

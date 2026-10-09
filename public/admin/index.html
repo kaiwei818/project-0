@@ -11,6 +11,7 @@
   <header class="site-header admin-header">
     <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
     <nav>
+      <a href="/admin/licenses">License codes</a>
       <a href="/admin/about">About page</a>
       <a href="/" target="_blank">View site</a>
       <button type="button" id="logout" class="button-secondary">Log out</button>
@@ -42,6 +43,18 @@
       <p class="form-error" id="new-set-error" role="alert"></p>
       <p class="muted">The order here is the order on the home page. Drag ⠿ or use ↑ ↓ to change it.</p>
       <ul class="admin-set-list" id="set-list"></ul>
+    </section>
+
+    <section aria-labelledby="categories-heading">
+      <h2 id="categories-heading">Categories</h2>
+      <p class="muted">Visitors can filter your sets by these on the home page. Pick each set's categories on its page.</p>
+      <form id="new-category-form" class="inline-form">
+        <label for="new-category-name" class="visually-hidden">New category name</label>
+        <input id="new-category-name" type="text" maxlength="40" placeholder="New category, e.g. Landscape" required>
+        <button type="submit">Add</button>
+      </form>
+      <p class="form-error" id="new-category-error" role="alert"></p>
+      <ul class="admin-tags" id="category-list"></ul>
     </section>
   </main>
 

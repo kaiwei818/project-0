@@ -1,8 +1,22 @@
-// PATCH  /api/admin/photos/:id   body: any of {"caption", "alt_text", "camera_info"}
+// PATCH  /api/admin/photos/:id   body: any of {"caption", "alt_text", "camera_info"},
+//                                or {"remove_download": true} to delete the clean copy
 // DELETE /api/admin/photos/:id   deletes the row and all of its image files
 
 export async function onRequestPatch({ request, env, params }) {
   const body = await request.json().catch(() => ({}));
+
+  if (body.remove_download) {
+    const photo = await env.DB.prepare(`SELECT download_key FROM photos WHERE id = ?`)
+      .bind(Number(params.id)).first();
+    if (!photo) return Response.json({ error: "Photo not found" }, { status: 404 });
+    if (photo.download_key) {
+      // Database first, then the file (same reasoning as deleting a photo).
+      await env.DB.prepare(`UPDATE photos SET download_key = NULL WHERE id = ?`).bind(Number(params.id)).run();
+      await env.BUCKET.delete(photo.download_key);
+    }
+    return Response.json({ ok: true });
+  }
+
   const changes = {};
   // caption:  shown to everyone under the photo in the viewer
   // alt_text: read aloud by screen readers, and used by Google image search
@@ -25,7 +39,7 @@ export async function onRequestPatch({ request, env, params }) {
 
 export async function onRequestDelete({ env, params }) {
   const photo = await env.DB.prepare(
-    `SELECT id, small_key, thumb_key, medium_key, display_key FROM photos WHERE id = ?`
+    `SELECT id, small_key, thumb_key, medium_key, display_key, download_key FROM photos WHERE id = ?`
   ).bind(Number(params.id)).first();
 
   if (!photo) return Response.json({ error: "Photo not found" }, { status: 404 });
@@ -36,7 +50,7 @@ export async function onRequestDelete({ env, params }) {
     env.DB.prepare(`DELETE FROM photos WHERE id = ?`).bind(photo.id),
   ]);
   // Older photos have no small/medium version (null): leave those out.
-  await env.BUCKET.delete([photo.small_key, photo.thumb_key, photo.medium_key, photo.display_key].filter(Boolean));
+  await env.BUCKET.delete([photo.small_key, photo.thumb_key, photo.medium_key, photo.display_key, photo.download_key].filter(Boolean));
 
   return Response.json({ ok: true });
 }

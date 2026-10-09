@@ -21,6 +21,7 @@ const setId = Number(new URLSearchParams(location.search).get("id"));
 const $ = (id) => document.getElementById(id);
 const baseTitle = document.title; // "Set · Admin | winstonlens"
 const wmOn = $("wm-on");
+const keepClean = $("keep-clean");
 const wmText = $("wm-text");
 
 let set = null;
@@ -43,6 +44,40 @@ async function loadSet() {
   set = await response.json();
   showDetails();
   renderExisting();
+  loadCategories();
+}
+
+// ---------- Categories ----------
+
+async function loadCategories() {
+  const response = await fetch("/api/admin/categories");
+  if (!response.ok) return;
+  const categories = await response.json();
+  $("category-empty").hidden = categories.length > 0;
+  $("category-boxes").replaceChildren(...categories.map((category) => {
+    const label = document.createElement("label");
+    label.className = "checkbox";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.value = category.id;
+    box.checked = set.category_ids.includes(category.id);
+    // Saves straight away, like the other details.
+    box.addEventListener("change", saveCategories);
+    label.append(box, ` ${category.name}`);
+    return label;
+  }));
+}
+
+async function saveCategories() {
+  const ids = [...$("category-boxes").querySelectorAll("input:checked")].map((box) => Number(box.value));
+  const response = await fetch(`/api/admin/sets/${setId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ category_ids: ids }),
+  });
+  if (!response.ok) return alert("Could not save the categories. Please try again.");
+  set.category_ids = ids;
+  flash($("details-status"), "Saved");
 }
 
 // ---------- Set details ----------
@@ -179,6 +214,13 @@ function createPhotoCard(photo, index) {
     badge.textContent = "Cover";
     figure.append(badge);
   }
+  if (photo.downloadable) {
+    const badge = document.createElement("span");
+    badge.className = "download-badge";
+    badge.textContent = "Downloadable";
+    badge.title = "A clean copy is stored for visitors with a license code";
+    figure.append(badge);
+  }
 
   const caption = textField(photo, "caption", "Caption (shown in the viewer)");
   const camera = textField(photo, "camera_info", "Camera details (shown in the viewer; clear to hide)");
@@ -192,6 +234,9 @@ function createPhotoCard(photo, index) {
     toolButton("→", `Move photo ${number} later`, () => movePhoto(item, 1, "→")),
     toolButton(isCover ? "★" : "☆", isCover ? `Photo ${number} is the cover` : `Make photo ${number} the cover`,
       () => setCover(photo), isCover ? "active" : ""),
+    ...(photo.downloadable
+      ? [toolButton("⤓", `Stop photo ${number} being downloadable (deletes its clean copy)`, () => removeDownload(photo))]
+      : []),
     toolButton("×", `Delete photo ${number}`, () => deletePhoto(photo), "danger"),
   );
 
@@ -285,6 +330,18 @@ async function setCover(photo) {
 }
 
 // ---------- Deleting ----------
+
+async function removeDownload(photo) {
+  if (!confirm("Delete this photo's clean copy? It will no longer be downloadable with a license code.\n\nThe photo itself stays.")) return;
+  const response = await fetch(`/api/admin/photos/${photo.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ remove_download: true }),
+  });
+  if (!response.ok) return alert("Could not remove the clean copy. Please try again.");
+  photo.downloadable = 0;
+  renderExisting();
+}
 
 async function deletePhoto(photo) {
   if (!confirm("Delete this photo?\n\nThis cannot be undone.")) return;
@@ -396,7 +453,7 @@ async function processItem(item) {
   const result = await new Promise((resolve) => {
     worker.onmessage = (event) => resolve(event.data);
     worker.onerror = () => resolve({ error: "Processing failed." });
-    worker.postMessage({ id: item.id, file: item.file, watermark: currentWatermark() });
+    worker.postMessage({ id: item.id, file: item.file, watermark: currentWatermark(), keepClean: keepClean.checked });
   });
 
   if (result.error) {
@@ -465,9 +522,9 @@ async function uploadItem(item) {
   form.append("height", height);
   form.append("alt_text", `Photo from ${set.title}`);
   form.append("camera_info", cameraInfo || "");
-  for (const size of ["small", "thumb", "medium", "display"]) {
+  for (const size of ["small", "thumb", "medium", "display", "download"]) {
     const blob = item.result[size];
-    form.append(size, blob, `${size}.${extension(blob)}`);
+    if (blob) form.append(size, blob, `${size}.${extension(blob)}`);
   }
 
   try {
@@ -566,6 +623,7 @@ function renderItem(item) {
     const { small, thumb, medium, display, cameraInfo } = item.result;
     const online = small.size + thumb.size + medium.size + display.size;
     sizes.textContent = `${formatBytes(item.file.size)} → ${formatBytes(online)} online (4 sizes)`;
+    if (item.result.download) sizes.textContent += ` + ${formatBytes(item.result.download.size)} private clean copy`;
     if (cameraInfo) sizes.textContent += ` · ${cameraInfo}`;
   }
 }
@@ -596,7 +654,7 @@ function renderSummary() {
   $("upload-button").textContent = `Upload ${ready || ""} ${ready === 1 ? "photo" : "photos"}`.replace("  ", " ");
 
   // The watermark is baked in while shrinking, so it cannot change mid-batch.
-  wmOn.disabled = wmText.disabled = isBusy() || ready > 0;
+  wmOn.disabled = wmText.disabled = keepClean.disabled = isBusy() || ready > 0;
 }
 
 function isBusy() {

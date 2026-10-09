@@ -21,6 +21,8 @@
 
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
+/* "hidden" always wins, even over layout rules like display: flex below. */
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -725,3 +727,79 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 
 /* ---------- Home page tagline ---------- */
 .site-tagline { margin: 0 0 24px; color: var(--muted); }
+
+/* ---------- Categories (home page filter) ---------- */
+.category-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+.category-nav a {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.category-nav a:hover { color: var(--text); border-color: var(--text); }
+.category-nav a[aria-current="page"] { background: var(--text); border-color: var(--text); color: var(--bg); }
+
+/* ---------- Licensed downloads ---------- */
+.license-panel {
+  margin: 32px 0 0;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 560px;
+}
+.license-panel h2 { margin: 0 0 4px; font-size: 1rem; }
+.license-panel.unlocked { border-color: #16a34a; }
+.license-panel input { text-transform: uppercase; letter-spacing: 0.05em; }
+.lightbox-download {
+  position: absolute;
+  top: 8px;
+  right: 64px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.lightbox-download:hover { background: #e5e5e5; }
+
+/* ---------- Admin: downloads and categories ---------- */
+.download-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.category-picker { border: 0; padding: 0; margin: 0 0 12px; }
+.category-picker legend { margin-bottom: 6px; }
+.category-picker .checkbox { display: inline-flex !important; margin: 0 16px 6px 0 !important; }
+.admin-tags { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 8px 0 0; padding: 0; }
+.admin-tags li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.admin-tags button { width: 24px; height: 24px; padding: 0; border-radius: 50%; }
+.license-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
+.license-table th, .license-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.license-table code { font-size: 1rem; font-weight: 600; letter-spacing: 0.04em; }
+.license-table tr.is-off { opacity: 0.55; }
+.license-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.license-actions button { padding: 4px 10px; font-size: 0.85rem; }
+.set-checklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 16px; margin: 0 0 12px; }
+.new-code { margin: 12px 0 0; padding: 12px 16px; border-radius: 8px; background: #dcfce7; color: #14532d; }
+.new-code code { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.06em; }
+@media (max-width: 700px) { .license-table .hide-small { display: none; } }
+.panel input[type="date"],
+.panel input[type="number"] { display: block; max-width: 220px; margin-bottom: 12px; }

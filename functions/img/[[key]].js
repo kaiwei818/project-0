@@ -15,6 +15,11 @@ export async function onRequestGet({ request, env, params }) {
   }
 
   const key = params.key.join("/");
+  // Clean copies for licensed downloads live under "private/". They must never
+  // be reachable here; only /api/download/... hands them out, after checking a code.
+  if (key.startsWith("private/") || key.includes("..")) {
+    return new Response("Not found", { status: 404 });
+  }
   const object = await env.BUCKET.get(key);
 
   if (!object) {

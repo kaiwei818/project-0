@@ -14,6 +14,7 @@
   <meta property="og:url" content="">
   <meta property="og:image" content="">
   <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -26,16 +27,16 @@
   </header>
 
   <main>
-    <h1 class="visually-hidden">Sets</h1>
-    <!-- home.js fills this list with one card per set. -->
-    <ul class="set-grid" id="set-grid" aria-live="polite"></ul>
-    <p class="status" id="status">Loading...</p>
+    <h1 class="visually-hidden">Photo sets</h1>
+    <p class="site-tagline" data-site="description"></p>
+    <!-- functions/index.js fills this list with one card per published set. -->
+    <ul class="set-grid" id="set-grid"></ul>
+    <p class="status" id="status"></p>
   </main>
 
   <footer class="site-footer">
     © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
   </footer>
 
-  <script src="/js/home.js" type="module"></script>
 </body>
 </html>

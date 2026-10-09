@@ -61,6 +61,11 @@ wrangler.toml         Tells Cloudflare where everything is
 package.json          Lists the tools this project needs, and shortcut commands
 ```
 
+> **Update (Lesson 9):** the home page and set pages are now built on the server
+> (`functions/index.js`, `functions/sets/[slug].js`) instead of by `home.js` in
+> the browser, so search engines see the content. The diagram above shows the
+> original design, which is still a good way to learn how pages and APIs talk.
+
 Read the files in this order. Each one has comments that explain it:
 `migrations/0001_init.sql`, then `functions/api/sets/index.js`, then
 `public/index.html`, then `public/js/home.js`, then `public/css/style.css`.

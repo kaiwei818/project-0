@@ -1,74 +1,28 @@
-// Set page: read the slug from the URL (/sets/<slug>), ask the API for that set,
-// then build the thumbnail grid. Tapping a photo opens the full-screen viewer.
+// Set page. The server already put the title, description, and photo grid into
+// the page (see functions/sets/[slug].js), so there is nothing to download or
+// build here. This script only makes the photos clickable: tapping one opens the
+// full-screen viewer.
 
-import { gridSrcset, img as imageUrl } from "./images.js";
 import { createLightbox } from "./lightbox.js";
 
-const grid = document.getElementById("photo-grid");
-const status = document.getElementById("status");
+// The photo details (all sizes, captions, camera info), sent along in the page.
+const photos = JSON.parse(document.getElementById("set-data").textContent);
+const lightbox = createLightbox(photos);
 
-async function loadSet() {
-  const slug = decodeURIComponent(location.pathname.split("/").pop());
-  const response = await fetch(`/api/sets/${encodeURIComponent(slug)}`);
-
-  if (response.status === 404) {
-    status.textContent = "This set does not exist.";
-    return;
-  }
-  if (!response.ok) throw new Error(`API returned ${response.status}`);
-
-  const set = await response.json();
-  // Only you (logged in) can load a draft; remind yourself it is not public yet.
-  document.getElementById("draft-banner").hidden = Boolean(set.published);
-  document.getElementById("set-title").textContent = set.title;
-  document.getElementById("set-description").textContent = set.description;
-
-  const lightbox = createLightbox(set.photos);
-  set.photos.forEach((photo, index) => {
-    grid.append(createThumb(photo, index, lightbox));
-  });
-  status.remove();
-}
-
-function createThumb(photo, index, lightbox) {
-  const item = document.createElement("li");
-  // The photo's shape, used by the CSS to reserve exactly the right space.
-  item.style.setProperty("--ratio", (photo.width / photo.height).toFixed(4));
-
-  // A <button> (not a plain image) so keyboard users can Tab to it and press Enter.
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "thumb-button";
-  button.setAttribute("aria-label", `View photo ${index + 1}${photo.alt_text ? `: ${photo.alt_text}` : ""}`);
+for (const button of document.querySelectorAll("#photo-grid .thumb-button")) {
+  const index = Number(button.dataset.index);
   button.addEventListener("click", () => lightbox.open(index, button));
 
-  const img = document.createElement("img");
-  // How wide this photo appears in the grid (see .photo-grid in style.css):
-  // about ratio x row height, plus room for the row stretching to fill the width.
-  const ratio = photo.width / photo.height;
-  img.sizes = `(max-width: 600px) ${Math.round(ratio * 160 * 1.4)}px, ${Math.round(ratio * 260 * 1.4)}px`;
-  img.srcset = gridSrcset(photo); // set sizes first: the browser chooses as soon as srcset is set
-  img.src = imageUrl(photo.thumb_key); // used if the browser does not support srcset
-  // Remember which file the grid got, so the viewer can show it instantly.
-  img.addEventListener("load", () => (photo.gridSrc = img.currentSrc));
-  img.alt = ""; // the button's label already describes it
-  img.loading = "lazy"; // only download when scrolled near
-  img.width = photo.width;
-  img.height = photo.height;
-  img.draggable = false;
-
-  button.append(img);
-  item.append(button);
-  return item;
+  // Remember which file the grid picture used, so the viewer can show it
+  // instantly while the large version loads.
+  const img = button.querySelector("img");
+  const remember = () => (photos[index].gridSrc = img.currentSrc);
+  if (img.complete) remember();
+  else img.addEventListener("load", remember);
 }
 
 // A light deterrent from the spec: no right-click "Save Image" on photos.
 // It only stops casual saving; screenshots and developer tools still work.
 document.addEventListener("contextmenu", (event) => {
   if (event.target.tagName === "IMG") event.preventDefault();
-});
-
-loadSet().catch((error) => {
-  console.error(error);
-  status.textContent = "Could not load this set. Please try again later.";
 });

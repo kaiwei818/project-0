@@ -722,3 +722,6 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 .panel input[type="url"] { width: 100%; max-width: 360px; margin-bottom: 12px; }
 .panel h2 + label { margin-top: 0; }
 .button-like:has(+ input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- Home page tagline ---------- */
+.site-tagline { margin: 0 0 24px; color: var(--muted); }

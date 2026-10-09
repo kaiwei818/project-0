@@ -23,6 +23,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 6. [Branding, drafts, search engines, and the 404 page](docs/lessons/06-brand-drafts-seo.md)
 7. [Camera details, the About page, and faster phones](docs/lessons/07-camera-about-phones.md)
 8. [Moving to your own domain](docs/lessons/08-custom-domain.md)
+9. [Fixing "Soft 404": pages that arrive complete](docs/lessons/09-server-rendered-pages.md)
 
 ---
 
@@ -126,13 +127,14 @@ public/                  Files sent to browsers as they are
   404.html                 The "page not found" page
 functions/               Server code; the file path is the web address
   _middleware.js           Runs for every request: security headers, site name
-  index.js                 Home page link-preview tags
+  index.js                 Home page, with the set cards built on the server
   robots.txt.js, sitemap.xml.js   For search engines
   api/sets/                Public data (read only)
   api/admin/               Admin data; _middleware.js checks the login for all of it
   img/[[key]].js           Serves images from R2, with hotlink protection
-  sets/[slug].js           Set pages with link-preview tags
-lib/                     Shared server code: site name (site.js), settings, login, slugs, ordering, security headers, page tags
+  sets/[slug].js           Set pages, with the photo grid built on the server
+lib/                     Shared server code: site name (site.js), database queries, page HTML (render.js),
+                         settings, login, slugs, ordering, security headers, page tags
 migrations/              Database tables, one numbered file per change
 scripts/                 hash-password and seed-local
 ```

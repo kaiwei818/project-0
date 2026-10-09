@@ -11,8 +11,13 @@
   <main class="login">
     <h1><span data-site="name"></span> admin</h1>
     <form id="login-form" class="card-form">
+      <!-- autocomplete="username" and "current-password" let Safari and password
+           managers fill these in and offer to save them. -->
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username"
+             autocapitalize="none" spellcheck="false" required autofocus>
       <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
       <button type="submit">Log in</button>
       <!-- role="alert" makes screen readers announce errors as soon as they appear. -->
       <p class="form-error" id="error" role="alert"></p>

@@ -169,3 +169,30 @@ and never appear in your code.
 **Lesson 3:** creating sets and the upload page. Your browser shrinks each 25 MB
 original into a thumbnail and a display version, adds your watermark, and uploads
 only those.
+
+---
+
+## Added later: a username
+
+The login page now asks for a **username** as well as the password. The
+username is stored like the password, as a Cloudflare secret called
+`ADMIN_USERNAME` (and in `.dev.vars` on your Mac), not in the code, so it never
+appears on GitHub.
+
+- Capital letters and spaces around it do not matter: `Me@Example.com` and
+  `me@example.com` both work.
+- A wrong login always says "Wrong username or password", never which one was
+  wrong, so someone guessing learns nothing. The server also checks both every
+  time, so it does not even answer faster for a wrong username.
+- `npm run hash-password` now asks for the username first.
+
+To add or change only the username on the live site (keeping your password):
+
+```
+npx wrangler pages secret put ADMIN_USERNAME
+npm run deploy
+```
+
+On your Mac, open `.dev.vars` (`open -e .dev.vars`) and add or edit the line
+`ADMIN_USERNAME=your-username`, then restart `npm run dev`.
+

@@ -11,13 +11,16 @@ import { img as imageUrl, viewerSrcset } from "./images.js";
 
 const SWIPE_DISTANCE = 50; // pixels a finger must travel to count as a swipe
 
-export function createLightbox(photos) {
+// downloadUrl(photo): optional; returns a download address for this photo, or ""
+// when it cannot be downloaded (no license code entered, or no clean copy).
+export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   const dialog = document.getElementById("lightbox");
   const img = document.getElementById("lightbox-img");
   const info = document.getElementById("lightbox-info");
   const caption = document.getElementById("lightbox-caption");
   const camera = document.getElementById("lightbox-camera");
   const counter = document.getElementById("lightbox-counter");
+  const download = document.getElementById("lightbox-download");
   const prevButton = document.getElementById("lightbox-prev");
   const nextButton = document.getElementById("lightbox-next");
   let index = 0;
@@ -43,6 +46,9 @@ export function createLightbox(photos) {
     camera.hidden = !photo.camera_info;
     info.hidden = caption.hidden && camera.hidden;
     counter.textContent = `${index + 1} / ${photos.length}`;
+    const href = downloadUrl(photo);
+    download.hidden = !href;
+    if (href) download.href = href;
     const single = photos.length === 1;
     prevButton.hidden = nextButton.hidden = single;
 
@@ -126,5 +132,10 @@ export function createLightbox(photos) {
     }
   });
 
-  return { open };
+  // Show or hide the Download button for the photo on screen (after a code was entered).
+  function refresh() {
+    if (dialog.open) show(index);
+  }
+
+  return { open, refresh };
 }

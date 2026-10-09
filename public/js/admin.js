@@ -172,6 +172,51 @@ document.getElementById("new-set-form").addEventListener("submit", async (event)
   location.href = `/admin/set?id=${data.id}`;
 });
 
+// ---------- Categories ----------
+
+const categoryList = document.getElementById("category-list");
+
+async function loadCategories() {
+  const response = await fetch("/api/admin/categories");
+  if (!response.ok) return;
+  const categories = await response.json();
+  categoryList.replaceChildren(...categories.map((category) => {
+    const item = document.createElement("li");
+    const sets = `${category.set_count} ${category.set_count === 1 ? "set" : "sets"}`;
+    item.append(`${category.name} `);
+    const count = document.createElement("span");
+    count.className = "muted";
+    count.textContent = `(${sets})`;
+    const remove = iconButton("×", `Delete category ${category.name}`, async () => {
+      if (!confirm(`Delete the category "${category.name}"?\n\nIts sets stay; they just lose this category.`)) return;
+      const result = await fetch(`/api/admin/categories/${category.id}`, { method: "DELETE" });
+      if (!result.ok) return alert("Could not delete the category. Please try again.");
+      loadCategories();
+    });
+    item.append(count, remove);
+    return item;
+  }));
+}
+
+document.getElementById("new-category-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = document.getElementById("new-category-name");
+  const error = document.getElementById("new-category-error");
+  error.textContent = "";
+  const response = await fetch("/api/admin/categories", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: input.value }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    error.textContent = data.error || "Could not add the category.";
+    return;
+  }
+  input.value = "";
+  loadCategories();
+});
+
 // ---------- Log out ----------
 
 document.getElementById("logout").addEventListener("click", async () => {
@@ -180,6 +225,7 @@ document.getElementById("logout").addEventListener("click", async () => {
 });
 
 loadSets().catch((error) => console.error(error));
+loadCategories().catch((error) => console.error(error));
 loadStats().catch((error) => {
   console.error(error);
   document.getElementById("storage-text").textContent = "Could not load storage info.";

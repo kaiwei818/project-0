@@ -3,12 +3,14 @@
 Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
 
 - **Public gallery:** sets (albums) of photos, a full-screen viewer with swipe and
-  keyboard controls and camera details, an About page, link previews when you
-  share a page, and images sized for each screen so phones load fast.
+  keyboard controls and camera details, category filters, an About page, link
+  previews when you share a page, and images sized for each screen so phones load
+  fast. Visitors with a license code you gave them can download clean copies.
 - **Private admin area** at `/admin`: create sets as private drafts, publish,
   rename, reorder, and delete them;
-  upload photos (shrunk and watermarked in your browser, so originals never leave
-  your computer); reorder photos, choose covers, and write captions and
+  upload photos (shrunk and given a tiled watermark in your browser, so originals
+  never leave your computer), optionally with a private clean copy for downloads;
+  create license codes and categories; reorder photos, choose covers, and write captions and
   descriptions; watch your storage use, overall and per set.
 
 The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
@@ -24,6 +26,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 7. [Camera details, the About page, and faster phones](docs/lessons/07-camera-about-phones.md)
 8. [Moving to your own domain](docs/lessons/08-custom-domain.md)
 9. [Fixing "Soft 404": pages that arrive complete](docs/lessons/09-server-rendered-pages.md)
+10. [License codes, categories, and the tiled watermark](docs/lessons/10-downloads-categories-watermark.md)
 
 ---
 
@@ -130,6 +133,7 @@ functions/               Server code; the file path is the web address
   index.js                 Home page, with the set cards built on the server
   robots.txt.js, sitemap.xml.js   For search engines
   api/sets/                Public data (read only)
+  api/license/, api/download/   License code check and clean-copy downloads
   api/admin/               Admin data; _middleware.js checks the login for all of it
   img/[[key]].js           Serves images from R2, with hotlink protection
   sets/[slug].js           Set pages, with the photo grid built on the server
@@ -144,10 +148,13 @@ scripts/                 hash-password and seed-local
 Public (read only):
 
 - `GET /api/sets`: all published sets with cover and photo count
+- `GET /?category=:slug`: the home page filtered to one category
 - `GET /api/sets/:slug`: one set with its photos (drafts only when logged in)
 - `GET /about`: the About page
 - `GET /robots.txt`, `GET /sitemap.xml`: for search engines
-- `GET /img/:key`: an image file (refuses other websites)
+- `GET /img/:key`: an image file (refuses other websites and private clean copies)
+- `POST /api/license/check`: is this license code valid for this set
+- `GET /api/download/:id?code=...`: download a clean copy with a valid code (counts one download)
 
 Admin (login required; writes must come from this site):
 
@@ -155,10 +162,12 @@ Admin (login required; writes must come from this site):
 - `GET /api/admin/stats`: storage used, in total and per set
 - `GET /api/admin/sets`, `POST /api/admin/sets`
 - `PATCH /api/admin/sets/order`: order of sets
-- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover, published)
+- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover, published, categories)
 - `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
-- `POST /api/admin/photos`: upload one photo (thumbnail and display version)
-- `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, delete
+- `POST /api/admin/photos`: upload one photo (all sizes, plus an optional private clean copy)
+- `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, remove clean copy, delete
+- `GET`, `POST /api/admin/licenses`; `PATCH`, `DELETE /api/admin/licenses/:id`: license codes
+- `GET`, `POST /api/admin/categories`; `DELETE /api/admin/categories/:id`: categories
 - `GET`, `PATCH /api/admin/about`: About page bio and contact details
 - `POST`, `DELETE /api/admin/about/portrait`: About page portrait
 
@@ -167,6 +176,7 @@ Admin (login required; writes must come from this site):
 - Nothing on the web can fully stop people from saving images. This site only
   serves watermarked, resized copies (originals never go online), blocks
   right-click saving, and stops other websites from embedding your images.
-  Screenshots still work.
+  Screenshots still work. Someone with a license code can share the clean files
+  they download; switch off a code to stop further downloads.
 - One admin account. Logging out removes the cookie from that browser; to log out
   everywhere, run `npm run hash-password` and update both secrets.

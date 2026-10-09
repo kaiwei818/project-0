@@ -42,6 +42,11 @@
       <p class="muted small">Changing it breaks links people already saved or shared.</p>
       <label for="details-description">Description (optional: shown on the home page card and under the set's title)</label>
       <textarea id="details-description" rows="3" maxlength="2000"></textarea>
+      <fieldset class="category-picker">
+        <legend>Categories</legend>
+        <div id="category-boxes"></div>
+        <p class="muted small" id="category-empty">No categories yet. Add them on the <a href="/admin/">dashboard</a>.</p>
+      </fieldset>
       <div class="actions">
         <button type="submit">Save details</button>
         <span class="save-status" id="details-status" role="status"></span>
@@ -50,12 +55,17 @@
 
     <!-- Step 1: watermark settings (locked while photos are in the list) -->
     <section class="panel" aria-labelledby="wm-heading">
-      <h2 id="wm-heading">Watermark</h2>
+      <h2 id="wm-heading">Watermark and downloads</h2>
       <label class="checkbox">
-        <input type="checkbox" id="wm-on" checked> Add a watermark to the large version
+        <input type="checkbox" id="wm-on" checked> Add a watermark (repeated across every public size)
       </label>
       <label for="wm-text">Text</label>
       <input id="wm-text" type="text" maxlength="80" placeholder="© Your Name">
+      <label class="checkbox">
+        <input type="checkbox" id="keep-clean"> Also store a clean copy (no watermark) for licensed downloads
+      </label>
+      <p class="muted small">Clean copies stay private: only visitors with a license code for this set can download them.
+        Each adds about 2 to 4 MB of storage. This is decided at upload; to make an existing photo downloadable, upload it again.</p>
     </section>
 
     <!-- Step 2: choose photos -->

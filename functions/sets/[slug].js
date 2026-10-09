@@ -37,6 +37,13 @@ export async function onRequestGet({ request, env, params }) {
         else el.setInnerContent("This set has no photos yet.");
       },
     })
+    // The license code box, only when some photos here can be downloaded.
+    .on("#license-panel", {
+      element(el) {
+        if (set.published && set.photos.some((p) => p.downloadable)) el.removeAttribute("hidden");
+        else el.remove();
+      },
+    })
     // Only you can open a draft; remind yourself it is not public yet.
     .on("#draft-banner", { element(el) { if (!set.published) el.removeAttribute("hidden"); } })
     // The photo details the viewer needs, for set.js. No second request needed.

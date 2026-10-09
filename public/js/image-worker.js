@@ -3,10 +3,12 @@
 // freeze the page. The page sends a file in, and this sends four small files back.
 //
 // Output for each photo:
-//   small    800 px on the long edge, quality 0.80, no watermark  (grids on phones)
-//   thumb   1200 px on the long edge, quality 0.85, no watermark  (grids on computers)
-//   medium  2000 px on the long edge, quality 0.88, watermark     (viewer on phones)
-//   display 3000 px on the long edge, quality 0.90, watermark     (viewer on computers)
+//   small    800 px on the long edge, quality 0.80, light watermark  (grids on phones)
+//   thumb   1200 px on the long edge, quality 0.85, light watermark  (grids on computers)
+//   medium  2000 px on the long edge, quality 0.88, strong watermark (viewer on phones)
+//   display 3000 px on the long edge, quality 0.90, strong watermark (viewer on computers)
+//   download 3000 px JPEG, NO watermark, only if you ticked "clean copy"; kept
+//            private and given out only with a license code
 // The browser picks the smallest one that still looks sharp on each screen
 // (see "srcset" in set.js and lightbox.js), so phones download far less.
 //
@@ -31,9 +33,12 @@ const SIZES = {
 };
 
 self.onmessage = async (event) => {
-  const { id, file, watermark } = event.data;
+  const { id, file, watermark, keepClean } = event.data;
   try {
-    const [images, cameraInfo] = await Promise.all([processPhoto(file, watermark), readCameraInfo(file)]);
+    const [images, cameraInfo] = await Promise.all([
+      processPhoto(file, watermark, keepClean),
+      readCameraInfo(file),
+    ]);
     self.postMessage({ id, ...images, cameraInfo });
   } catch (err) {
     // Usually the browser ran out of memory for images (Safari has a strict
@@ -42,29 +47,40 @@ self.onmessage = async (event) => {
   }
 };
 
-async function processPhoto(file, watermark) {
+// keepClean: also make a private, clean 3000 px JPEG ("download"), for
+// visitors with a license code. It is saved BEFORE any watermark is drawn.
+async function processPhoto(file, watermark, keepClean) {
   // "from-image" applies the camera's rotation flag, so portrait shots stand upright.
   const original = await createImageBitmap(file, { imageOrientation: "from-image" });
   const canvases = {};
   try {
     // Each size is made from the next bigger one: much faster than starting
-    // from the 6000 px original every time.
+    // from the 6000 px original every time. All are still clean at this point.
     canvases.display = shrink(original, SIZES.display.edge);
     original.close(); // free the ~100 MB of decoded pixels as early as possible
     canvases.medium = shrink(canvases.display, SIZES.medium.edge);
     canvases.thumb = shrink(canvases.medium, SIZES.thumb.edge);
     canvases.small = shrink(canvases.thumb, SIZES.small.edge);
 
-    // Watermark only the two viewer sizes, after the smaller ones were copied.
-    if (watermark) {
-      drawWatermark(canvases.display, watermark);
-      drawWatermark(canvases.medium, watermark);
+    const { width, height } = canvases.display;
+    const blobs = {};
+
+    // JPEG for the download: every program can open it. High quality, since
+    // this is the copy people license.
+    if (keepClean) {
+      blobs.download = await canvases.display.convertToBlob({ type: "image/jpeg", quality: 0.92 });
     }
 
-    const { width, height } = canvases.display; // read before freeing it below
+    // Now mark every public size: strong on the two viewer sizes, lighter on
+    // the grid sizes (still enough to spoil a saved copy).
+    if (watermark) {
+      drawTiledWatermark(canvases.display, watermark, "strong");
+      drawTiledWatermark(canvases.medium, watermark, "strong");
+      drawTiledWatermark(canvases.thumb, watermark, "light");
+      drawTiledWatermark(canvases.small, watermark, "light");
+    }
 
     // One at a time keeps less memory in use than all at once.
-    const blobs = {};
     for (const [name, { quality }] of Object.entries(SIZES)) {
       blobs[name] = await encode(canvases[name], quality);
       release(canvases[name]); // done with this size
@@ -109,17 +125,44 @@ function draw(source, width, height) {
   return canvas;
 }
 
-// Semi-transparent text in the bottom right corner, sized to the photo.
-function drawWatermark(canvas, text) {
+// A repeating diagonal pattern of the watermark text over the whole photo,
+// like stock photo sites use. Cropping or retouching one corner does not remove
+// it. White letters with a thin dark outline show on both bright and dark photos.
+const WATERMARK_STYLES = {
+  strong: { fill: "rgba(255, 255, 255, 0.34)", stroke: "rgba(0, 0, 0, 0.22)", size: 0.045 },
+  light: { fill: "rgba(255, 255, 255, 0.2)", stroke: "rgba(0, 0, 0, 0.12)", size: 0.06 },
+};
+
+function drawTiledWatermark(canvas, text, strength) {
+  const style = WATERMARK_STYLES[strength];
   const ctx = canvas.getContext("2d");
-  const size = Math.round(Math.min(canvas.width, canvas.height) * 0.04);
-  ctx.font = `600 ${size}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
-  ctx.textAlign = "right";
-  ctx.textBaseline = "bottom";
-  ctx.shadowColor = "rgba(0, 0, 0, 0.5)"; // keeps it readable on bright skies
-  ctx.shadowBlur = size * 0.25;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-  ctx.fillText(text, canvas.width - size, canvas.height - size);
+  const { width, height } = canvas;
+  // Letter size relative to the photo, so every size looks the same.
+  const size = Math.max(10, Math.round(Math.min(width, height) * style.size));
+
+  ctx.save();
+  ctx.font = `500 ${size}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = style.fill;
+  ctx.strokeStyle = style.stroke;
+  ctx.lineWidth = Math.max(1, size * 0.05);
+
+  // Turn the drawing surface 30 degrees around the centre, then fill a grid
+  // big enough to still cover the corners after turning.
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate(-Math.PI / 6);
+  const stepX = ctx.measureText(text).width + size * 3;
+  const stepY = size * 4;
+  const reach = Math.hypot(width, height) / 2 + stepX;
+  for (let row = 0, y = -reach; y <= reach; y += stepY, row++) {
+    const shift = row % 2 ? stepX / 2 : 0; // stagger every other row, like brickwork
+    for (let x = -reach - shift; x <= reach; x += stepX) {
+      ctx.strokeText(text, x, y);
+      ctx.fillText(text, x, y);
+    }
+  }
+  ctx.restore();
 }
 
 // WebP is about 30% smaller than JPEG at the same quality. Safari cannot create

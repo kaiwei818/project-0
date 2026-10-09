@@ -37,6 +37,19 @@
     <!-- functions/sets/[slug].js fills in the title, description, and photos. -->
     <ul class="photo-grid" id="photo-grid"></ul>
     <p class="status" id="status"></p>
+    <!-- Licensed downloads: shown by functions/sets/[slug].js only when the set has
+         downloadable photos. set.js checks the code and shows Download buttons. -->
+    <section class="license-panel" id="license-panel" hidden aria-labelledby="license-heading">
+      <h2 id="license-heading">Have a license code?</h2>
+      <p class="muted" id="license-help">Enter the code you received to download full-quality copies without the watermark.</p>
+      <form id="license-form" class="inline-form">
+        <label for="license-code" class="visually-hidden">License code</label>
+        <input id="license-code" type="text" placeholder="WL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+        <button type="submit">Unlock</button>
+      </form>
+      <p class="form-error" id="license-error" role="alert"></p>
+    </section>
+
     <!-- The photo details for the viewer, as data (browsers never run this). -->
     <script type="application/json" id="set-data">[]</script>
   </main>
@@ -55,6 +68,7 @@
       <p class="lightbox-caption" id="lightbox-caption"></p>
       <p class="lightbox-camera" id="lightbox-camera"></p>
     </div>
+    <a class="lightbox-download" id="lightbox-download" hidden download>Download</a>
     <button type="button" class="lightbox-button lightbox-close" id="lightbox-close" aria-label="Close">×</button>
     <button type="button" class="lightbox-button lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
     <button type="button" class="lightbox-button lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>

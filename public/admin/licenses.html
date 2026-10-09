@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title data-page="License codes · Admin"></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header admin-header">
+    <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
+    <nav>
+      <a href="/admin/">Dashboard</a>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="/admin/">All sets</a>
+    <h1>License codes</h1>
+    <p class="muted">
+      A code lets someone download the clean (no watermark) copies of photos in the sets you choose.
+      Only photos marked "Downloadable" can be downloaded. Give the code to the person; they enter it on the set's page.
+    </p>
+
+    <form class="panel" id="new-code-form" aria-labelledby="new-code-heading">
+      <h2 id="new-code-heading">New code</h2>
+      <label for="code-label">Who is it for? (only you see this)</label>
+      <input id="code-label" type="text" maxlength="100" placeholder="e.g. Jane, wedding 2026">
+      <fieldset class="category-picker">
+        <legend>Sets this code unlocks</legend>
+        <div class="set-checklist" id="set-boxes"></div>
+      </fieldset>
+      <label for="code-expires">Valid until (optional)</label>
+      <input id="code-expires" type="date">
+      <label for="code-max">Download limit (optional; leave empty for unlimited)</label>
+      <input id="code-max" type="number" min="1" step="1" placeholder="e.g. 50">
+      <div class="actions">
+        <button type="submit">Create code</button>
+      </div>
+      <p class="form-error" id="new-code-error" role="alert"></p>
+      <p class="new-code" id="new-code-result" hidden></p>
+    </form>
+
+    <section aria-labelledby="codes-heading">
+      <h2 id="codes-heading">Your codes</h2>
+      <p class="muted" id="codes-empty" hidden>No codes yet.</p>
+      <table class="license-table" id="codes-table" hidden>
+        <thead>
+          <tr><th>Code</th><th>For</th><th class="hide-small">Sets</th><th>Used</th><th class="hide-small">Valid until</th><th></th></tr>
+        </thead>
+        <tbody id="codes-body"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/js/admin-licenses.js" type="module"></script>
+</body>
+</html>

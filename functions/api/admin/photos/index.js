@@ -2,6 +2,8 @@
 // Receives one already-shrunk photo from the upload page, as a form with:
 //   set_id, width, height, alt_text, camera_info,
 //   small, thumb, medium, display (the four image files)
+//   download (optional): the clean copy for licensed downloads, stored under
+//   "private/", which /img/ refuses to serve
 // Saves the files to R2 and adds a row to the photos table.
 //
 // The browser did the resizing, so the 25 MB original never arrives here.
@@ -29,6 +31,7 @@ const SIZES = [
   { name: "thumb", required: true },
   { name: "medium", required: false },
   { name: "display", required: true },
+  { name: "download", required: false },
 ];
 
 export async function onRequestPost({ request, env }) {
@@ -66,7 +69,9 @@ export async function onRequestPost({ request, env }) {
   const id = crypto.randomUUID();
   const keys = {};
   for (const [name, file] of Object.entries(files)) {
-    keys[name] = `photos/${setId}/${id}-${name}.${file.format.ext}`;
+    keys[name] = name === "download"
+      ? `private/${setId}/${id}-download.${file.format.ext}`
+      : `photos/${setId}/${id}-${name}.${file.format.ext}`;
   }
   await Promise.all(Object.entries(files).map(([name, file]) =>
     env.BUCKET.put(keys[name], file.bytes, { httpMetadata: { contentType: file.format.type } })
@@ -75,13 +80,13 @@ export async function onRequestPost({ request, env }) {
 
   try {
     const photo = await env.DB.prepare(
-      `INSERT INTO photos (set_id, small_key, thumb_key, medium_key, display_key, width, height,
-                           alt_text, camera_info, size_bytes, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      `INSERT INTO photos (set_id, small_key, thumb_key, medium_key, display_key, download_key,
+                           width, height, alt_text, camera_info, size_bytes, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos WHERE set_id = ?))
        RETURNING id, thumb_key, display_key, width, height, alt_text, camera_info, size_bytes`
-    ).bind(setId, keys.small ?? null, keys.thumb, keys.medium ?? null, keys.display, width, height,
-           altText, cameraInfo, totalBytes, setId).first();
+    ).bind(setId, keys.small ?? null, keys.thumb, keys.medium ?? null, keys.display, keys.download ?? null,
+           width, height, altText, cameraInfo, totalBytes, setId).first();
     return Response.json(photo, { status: 201 });
   } catch (err) {
     // The files are saved but the database row failed: remove the files so

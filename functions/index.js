@@ -7,26 +7,45 @@
 // first version; an empty "Loading..." page gets marked as a "Soft 404".
 
 import { withPageMeta } from "../lib/meta.js";
-import { publishedSets } from "../lib/queries.js";
-import { setCardHtml } from "../lib/render.js";
+import { categoriesInUse, publishedSets } from "../lib/queries.js";
+import { escapeHtml, setCardHtml } from "../lib/render.js";
 
 export async function onRequestGet({ request, env }) {
-  const sets = await publishedSets(env);
   const url = new URL(request.url);
+  // ?category=landscape shows only that category. Plain links, so the filter
+  // works without JavaScript and Google can follow each category page.
+  const category = (url.searchParams.get("category") || "").slice(0, 60);
+  const [sets, categories] = await Promise.all([publishedSets(env, category), categoriesInUse(env)]);
+  const current = categories.find((c) => c.slug === category);
   const page = await env.ASSETS.fetch(new URL("/", url));
+
+  const button = (href, name, active) =>
+    `<a href="${href}"${active ? ' aria-current="page"' : ""}>${escapeHtml(name)}</a>`;
+  const nav = categories.length
+    ? button("/", "All", !current) +
+      categories.map((c) => button(`/?category=${encodeURIComponent(c.slug)}`, c.name, c === current)).join("")
+    : "";
 
   const filled = new HTMLRewriter()
     .on("#set-grid", { element(el) { el.setInnerContent(sets.map(setCardHtml).join(""), { html: true }); } })
+    .on("#category-nav", {
+      element(el) {
+        if (nav) el.setInnerContent(nav, { html: true });
+        else el.remove();
+      },
+    })
     .on("#status", {
       element(el) {
         if (sets.length) el.remove();
+        else if (category) el.setInnerContent("No sets in this category yet.");
         else el.setInnerContent("No photo sets yet. Please come back soon.");
       },
     })
     .transform(page);
 
   return withPageMeta(filled, {
-    url: url.origin + "/",
+    title: current ? current.name : "",
+    url: current ? `${url.origin}/?category=${encodeURIComponent(current.slug)}` : url.origin + "/",
     image: sets[0]?.cover_thumb_key ? `${url.origin}/img/${sets[0].cover_thumb_key}` : "",
   });
 }

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Upload | Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header admin-header">
+    <a class="site-name" href="/admin/">Admin</a>
+    <nav>
+      <a id="view-link" href="/" target="_blank">View set</a>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="/admin/">All sets</a>
+    <h1 id="set-title">Loading...</h1>
+
+    <!-- Step 1: watermark settings (locked while photos are in the list) -->
+    <section class="panel" aria-labelledby="wm-heading">
+      <h2 id="wm-heading">Watermark</h2>
+      <label class="checkbox">
+        <input type="checkbox" id="wm-on" checked> Add a watermark to the large version
+      </label>
+      <label for="wm-text">Text</label>
+      <input id="wm-text" type="text" maxlength="80" placeholder="© Your Name">
+    </section>
+
+    <!-- Step 2: choose photos -->
+    <section class="panel" aria-labelledby="add-heading">
+      <h2 id="add-heading">Add photos</h2>
+      <!-- The whole box is a <label> for the hidden file input, so clicking it opens the file picker. -->
+      <label class="drop-zone" id="drop-zone" for="file-input">
+        <strong>Drop photos here</strong> or click to choose
+        <span class="muted">JPEG, PNG, or WebP. Originals stay on your computer.</span>
+      </label>
+      <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple class="visually-hidden">
+    </section>
+
+    <!-- Step 3: check the results, then upload -->
+    <section class="panel" id="queue-panel" hidden aria-labelledby="queue-heading">
+      <h2 id="queue-heading">Ready to upload</h2>
+      <p id="queue-summary" aria-live="polite"></p>
+      <progress id="queue-progress" value="0" max="1"></progress>
+      <figure class="wm-preview" id="wm-preview" hidden>
+        <img id="wm-preview-img" alt="Preview of the first photo with its watermark">
+        <figcaption class="muted">Preview of the large version, exactly as visitors will see it.</figcaption>
+      </figure>
+      <div class="actions">
+        <button type="button" id="upload-button" disabled>Upload</button>
+        <button type="button" id="clear-button" class="button-secondary">Clear list</button>
+      </div>
+      <ul class="queue" id="queue"></ul>
+    </section>
+
+    <section aria-labelledby="existing-heading">
+      <h2 id="existing-heading">Photos in this set</h2>
+      <p class="muted" id="existing-empty" hidden>No photos yet.</p>
+      <ul class="admin-thumbs" id="existing"></ul>
+    </section>
+  </main>
+
+  <script src="/js/admin-set.js" type="module"></script>
+</body>
+</html>

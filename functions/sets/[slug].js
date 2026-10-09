@@ -12,7 +12,7 @@ export async function onRequestGet({ request, env, params }) {
                  ORDER BY sort_order, id LIMIT 1)
             ) AS cover_key
      FROM sets s WHERE s.slug = ?`
-  ).bind(params.slug).first();
+  ).bind(decodeSlug(params.slug)).first();
 
   // Fetch the static set.html file from the public folder.
   const page = await env.ASSETS.fetch(new URL("/set.html", request.url));
@@ -33,4 +33,14 @@ export async function onRequestGet({ request, env, params }) {
     .on('meta[property="og:description"]', { element(el) { el.setAttribute("content", set.description); } })
     .on('meta[property="og:image"]', { element(el) { el.setAttribute("content", image); } })
     .transform(page);
+}
+
+// The URL arrives still encoded: "台北夜景" comes in as "%E5%8F%B0...".
+// Decode it so it matches the slug stored in the database.
+function decodeSlug(raw) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw; // a broken "%" sequence: just look up the text as it is
+  }
 }

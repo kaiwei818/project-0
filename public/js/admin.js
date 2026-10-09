@@ -1,4 +1,4 @@
-// Admin dashboard: shows storage used and handles logging out.
+// Admin dashboard: storage used, the list of sets, creating sets, and logging out.
 
 async function loadStats() {
   const response = await fetch("/api/admin/stats");
@@ -26,11 +26,56 @@ function formatBytes(bytes) {
   return `${bytes.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
+// ---------- Sets ----------
+
+const setList = document.getElementById("set-list");
+
+async function loadSets() {
+  const response = await fetch("/api/admin/sets");
+  if (!response.ok) return;
+  const sets = await response.json();
+  setList.replaceChildren(...sets.map(createSetRow));
+}
+
+function createSetRow(set) {
+  const item = document.createElement("li");
+  const link = document.createElement("a");
+  link.href = `/admin/set?id=${set.id}`;
+  link.textContent = set.title;
+  const count = document.createElement("span");
+  count.className = "muted";
+  count.textContent = `${set.photo_count} ${set.photo_count === 1 ? "photo" : "photos"}`;
+  item.append(link, count);
+  return item;
+}
+
+document.getElementById("new-set-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const error = document.getElementById("new-set-error");
+  error.textContent = "";
+
+  const response = await fetch("/api/admin/sets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: document.getElementById("new-set-title").value }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    error.textContent = data.error || "Could not create the set.";
+    return;
+  }
+  // Go straight to the new set's upload page.
+  location.href = `/admin/set?id=${data.id}`;
+});
+
+// ---------- Log out ----------
+
 document.getElementById("logout").addEventListener("click", async () => {
   await fetch("/api/admin/logout", { method: "POST" });
   location.href = "/admin/login";
 });
 
+loadSets().catch((error) => console.error(error));
 loadStats().catch((error) => {
   console.error(error);
   document.getElementById("storage-text").textContent = "Could not load storage info.";

@@ -26,7 +26,16 @@
       <p class="muted" id="counts"></p>
     </section>
 
-    <p class="muted">Creating sets and uploading photos arrive in the next lessons.</p>
+    <section aria-labelledby="sets-heading">
+      <h2 id="sets-heading">Sets</h2>
+      <form id="new-set-form" class="inline-form">
+        <label for="new-set-title" class="visually-hidden">New set title</label>
+        <input id="new-set-title" name="title" type="text" maxlength="200" placeholder="New set title" required>
+        <button type="submit">Create set</button>
+      </form>
+      <p class="form-error" id="new-set-error" role="alert"></p>
+      <ul class="admin-set-list" id="set-list"></ul>
+    </section>
   </main>
 
   <script src="/js/admin.js" type="module"></script>

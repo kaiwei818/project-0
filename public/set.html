@@ -19,6 +19,10 @@
 <body>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/">Work</a>
+      <a href="/about">About</a>
+    </nav>
   </header>
 
   <main>
@@ -44,7 +48,10 @@
       <img id="lightbox-img" alt="" draggable="false">
     </div>
     <p class="lightbox-counter" id="lightbox-counter"></p>
-    <p class="lightbox-caption" id="lightbox-caption" hidden></p>
+    <div class="lightbox-info" id="lightbox-info" hidden>
+      <p class="lightbox-caption" id="lightbox-caption"></p>
+      <p class="lightbox-camera" id="lightbox-camera"></p>
+    </div>
     <button type="button" class="lightbox-button lightbox-close" id="lightbox-close" aria-label="Close">×</button>
     <button type="button" class="lightbox-button lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
     <button type="button" class="lightbox-button lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>

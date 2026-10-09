@@ -47,14 +47,16 @@ async function loadSet() {
 
 // ---------- Set details ----------
 
-function showDetails() {
+// sent: what a save just sent. Boxes you typed in since then are left alone,
+// so nothing you type is lost when a save finishes.
+function showDetails(sent = null) {
   $("set-title").textContent = set.title;
   document.title = baseTitle.replace(/^Set/, set.title);
   $("view-link").href = $("preview-link").href = `/sets/${encodeURIComponent(set.slug)}`;
   showVisibility();
-  $("details-title").value = set.title;
-  $("details-slug").value = set.slug;
-  $("details-description").value = set.description;
+  for (const [id, field] of [["details-title", "title"], ["details-slug", "slug"], ["details-description", "description"]]) {
+    if (!sent || $(id).value === sent[field]) $(id).value = set[field];
+  }
 }
 
 $("details-form").addEventListener("submit", (event) => {
@@ -70,16 +72,25 @@ for (const id of ["details-title", "details-slug", "details-description"]) {
   });
 }
 
-async function saveDetails() {
+// Saves run one after another, never at the same time. Otherwise, when you move
+// quickly between boxes, an older save could finish last and undo a newer one.
+let saving = Promise.resolve();
+function saveDetails() {
+  saving = saving.then(saveDetailsNow, saveDetailsNow);
+  return saving;
+}
+
+async function saveDetailsNow() {
   const status = $("details-status");
+  const sent = {
+    title: $("details-title").value,
+    slug: $("details-slug").value,
+    description: $("details-description").value,
+  };
   const response = await fetch(`/api/admin/sets/${setId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: $("details-title").value,
-      slug: $("details-slug").value,
-      description: $("details-description").value,
-    }),
+    body: JSON.stringify(sent),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -88,7 +99,7 @@ async function saveDetails() {
     return;
   }
   Object.assign(set, data);
-  showDetails(); // shows the cleaned-up web address, e.g. "My Trip!" -> "my-trip"
+  showDetails(sent); // shows the cleaned-up web address, e.g. "My Trip!" -> "my-trip"
   flash(status, "Saved");
 }
 
@@ -170,6 +181,7 @@ function createPhotoCard(photo, index) {
   }
 
   const caption = textField(photo, "caption", "Caption (shown in the viewer)");
+  const camera = textField(photo, "camera_info", "Camera details (shown in the viewer; clear to hide)");
   const alt = textField(photo, "alt_text", "Description for blind visitors (alt text)");
 
   const tools = document.createElement("div");
@@ -183,7 +195,7 @@ function createPhotoCard(photo, index) {
     toolButton("×", `Delete photo ${number}`, () => deletePhoto(photo), "danger"),
   );
 
-  item.append(figure, caption, alt, tools);
+  item.append(figure, caption, camera, alt, tools);
   return item;
 }
 
@@ -200,7 +212,7 @@ function textField(photo, field, labelText) {
   const input = document.createElement("input");
   input.type = "text";
   input.value = photo[field];
-  input.maxLength = field === "caption" ? 1000 : 500;
+  input.maxLength = { caption: 1000, alt_text: 500, camera_info: 200 }[field];
   const status = document.createElement("span");
   status.className = "save-status";
   status.setAttribute("role", "status");
@@ -380,7 +392,7 @@ function pumpProcessing() {
 }
 
 async function processItem(item) {
-  const worker = idleWorkers.pop() || new Worker("/js/image-worker.js");
+  const worker = idleWorkers.pop() || new Worker("/js/image-worker.js", { type: "module" });
   const result = await new Promise((resolve) => {
     worker.onmessage = (event) => resolve(event.data);
     worker.onerror = () => resolve({ error: "Processing failed." });
@@ -446,14 +458,17 @@ function pumpUploads() {
 }
 
 async function uploadItem(item) {
-  const { thumb, display, width, height } = item.result;
+  const { width, height, cameraInfo } = item.result;
   const form = new FormData();
   form.append("set_id", setId);
   form.append("width", width);
   form.append("height", height);
   form.append("alt_text", `Photo from ${set.title}`);
-  form.append("thumb", thumb, `thumb.${extension(thumb)}`);
-  form.append("display", display, `display.${extension(display)}`);
+  form.append("camera_info", cameraInfo || "");
+  for (const size of ["small", "thumb", "medium", "display"]) {
+    const blob = item.result[size];
+    form.append(size, blob, `${size}.${extension(blob)}`);
+  }
 
   try {
     const response = await fetch("/api/admin/photos", { method: "POST", body: form });
@@ -548,8 +563,10 @@ function renderItem(item) {
   status.textContent = item.status === "error" ? item.error : STATUS_TEXT[item.status];
   if (item.thumbUrl && !img.src) img.src = item.thumbUrl;
   if (item.result) {
-    const { thumb, display } = item.result;
-    sizes.textContent = `${formatBytes(item.file.size)} → ${formatBytes(thumb.size)} + ${formatBytes(display.size)}`;
+    const { small, thumb, medium, display, cameraInfo } = item.result;
+    const online = small.size + thumb.size + medium.size + display.size;
+    sizes.textContent = `${formatBytes(item.file.size)} → ${formatBytes(online)} online (4 sizes)`;
+    if (cameraInfo) sizes.textContent += ` · ${cameraInfo}`;
   }
 }
 

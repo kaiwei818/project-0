@@ -1,6 +1,7 @@
 // Set page: read the slug from the URL (/sets/<slug>), ask the API for that set,
 // then build the thumbnail grid. Tapping a photo opens the full-screen viewer.
 
+import { gridSrcset, img as imageUrl } from "./images.js";
 import { createLightbox } from "./lightbox.js";
 
 const grid = document.getElementById("photo-grid");
@@ -42,7 +43,14 @@ function createThumb(photo, index, lightbox) {
   button.addEventListener("click", () => lightbox.open(index, button));
 
   const img = document.createElement("img");
-  img.src = `/img/${photo.thumb_key}`;
+  // How wide this photo appears in the grid (see .photo-grid in style.css):
+  // about ratio x row height, plus room for the row stretching to fill the width.
+  const ratio = photo.width / photo.height;
+  img.sizes = `(max-width: 600px) ${Math.round(ratio * 160 * 1.4)}px, ${Math.round(ratio * 260 * 1.4)}px`;
+  img.srcset = gridSrcset(photo); // set sizes first: the browser chooses as soon as srcset is set
+  img.src = imageUrl(photo.thumb_key); // used if the browser does not support srcset
+  // Remember which file the grid got, so the viewer can show it instantly.
+  img.addEventListener("load", () => (photo.gridSrc = img.currentSrc));
   img.alt = ""; // the button's label already describes it
   img.loading = "lazy"; // only download when scrolled near
   img.width = photo.width;

@@ -1,28 +1,40 @@
 // Shrinks one photo. This file runs as a "Web Worker": a background thread, so
 // the heavy work (decoding a 25 MB file, resizing 24 million pixels) does not
-// freeze the page. The page sends a file in, and this sends two small files back.
+// freeze the page. The page sends a file in, and this sends four small files back.
 //
 // Output for each photo:
-//   thumb    1200 px on the long edge, quality 0.85, no watermark (used in the grids)
-//   display  3000 px on the long edge, quality 0.90, with the watermark (used in the viewer)
+//   small    800 px on the long edge, quality 0.80, no watermark  (grids on phones)
+//   thumb   1200 px on the long edge, quality 0.85, no watermark  (grids on computers)
+//   medium  2000 px on the long edge, quality 0.88, watermark     (viewer on phones)
+//   display 3000 px on the long edge, quality 0.90, watermark     (viewer on computers)
+// The browser picks the smallest one that still looks sharp on each screen
+// (see "srcset" in set.js and lightbox.js), so phones download far less.
 //
-// Why these numbers: Retina screens have 2 real pixels per point, so a photo shown
-// 470 points wide in the grid needs about 940 pixels to look sharp. 1200 leaves
-// room. 3000 px fills even a large 5K display in the full-screen viewer.
-// To change them, edit the four values below. Only photos uploaded afterwards change.
+// Why these numbers: Retina screens have 2 to 3 real pixels per point. A phone
+// is about 390 points wide, so it needs about 390 x 3 = 1170 pixels across. An
+// upright photo at 2000 px is 1333 px wide: enough. (At 1600 px it would be only
+// 1067 px wide, and the phone would pick the big 3000 px file instead.)
+// 3000 px fills even a large 5K display.
+// To change them, edit the values below. Only photos uploaded afterwards change.
 //
 // Drawing onto a canvas and saving it creates a brand new file, so ALL of the
 // original's hidden data (EXIF: GPS location, camera serial number) is left behind.
+// Before that, we read just the camera details we want to show (exif.js).
 
-const THUMB_EDGE = 1200;
-const THUMB_QUALITY = 0.85;
-const DISPLAY_EDGE = 3000;
-const DISPLAY_QUALITY = 0.9;
+import { readCameraInfo } from "./exif.js";
+
+const SIZES = {
+  small: { edge: 800, quality: 0.8 },
+  thumb: { edge: 1200, quality: 0.85 },
+  medium: { edge: 2000, quality: 0.88 },
+  display: { edge: 3000, quality: 0.9 },
+};
 
 self.onmessage = async (event) => {
   const { id, file, watermark } = event.data;
   try {
-    self.postMessage({ id, ...(await processPhoto(file, watermark)) });
+    const [images, cameraInfo] = await Promise.all([processPhoto(file, watermark), readCameraInfo(file)]);
+    self.postMessage({ id, ...images, cameraInfo });
   } catch (err) {
     // Usually the browser ran out of memory for images (Safari has a strict
     // limit), or the file is damaged. The upload page retries it once by itself.
@@ -33,24 +45,34 @@ self.onmessage = async (event) => {
 async function processPhoto(file, watermark) {
   // "from-image" applies the camera's rotation flag, so portrait shots stand upright.
   const original = await createImageBitmap(file, { imageOrientation: "from-image" });
-  let display, thumb;
+  const canvases = {};
   try {
-    display = shrink(original, DISPLAY_EDGE);
+    // Each size is made from the next bigger one: much faster than starting
+    // from the 6000 px original every time.
+    canvases.display = shrink(original, SIZES.display.edge);
     original.close(); // free the ~100 MB of decoded pixels as early as possible
+    canvases.medium = shrink(canvases.display, SIZES.medium.edge);
+    canvases.thumb = shrink(canvases.medium, SIZES.thumb.edge);
+    canvases.small = shrink(canvases.thumb, SIZES.small.edge);
 
-    // Make the thumbnail from the display version (much faster than from the
-    // original), before the watermark goes on.
-    thumb = shrink(display, THUMB_EDGE);
-    if (watermark) drawWatermark(display, watermark);
+    // Watermark only the two viewer sizes, after the smaller ones were copied.
+    if (watermark) {
+      drawWatermark(canvases.display, watermark);
+      drawWatermark(canvases.medium, watermark);
+    }
 
-    // One at a time keeps less memory in use than both at once.
-    const thumbBlob = await encode(thumb, THUMB_QUALITY);
-    const displayBlob = await encode(display, DISPLAY_QUALITY);
-    return { thumb: thumbBlob, display: displayBlob, width: display.width, height: display.height };
+    const { width, height } = canvases.display; // read before freeing it below
+
+    // One at a time keeps less memory in use than all at once.
+    const blobs = {};
+    for (const [name, { quality }] of Object.entries(SIZES)) {
+      blobs[name] = await encode(canvases[name], quality);
+      release(canvases[name]); // done with this size
+    }
+    return { ...blobs, width, height };
   } finally {
     original.close(); // safe to call twice
-    release(display);
-    release(thumb);
+    Object.values(canvases).forEach(release);
   }
 }
 

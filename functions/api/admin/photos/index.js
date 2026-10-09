@@ -1,7 +1,8 @@
 // POST /api/admin/photos
 // Receives one already-shrunk photo from the upload page, as a form with:
-//   set_id, width, height, alt_text, thumb (file), display (file)
-// Saves both files to R2 and adds a row to the photos table.
+//   set_id, width, height, alt_text, camera_info,
+//   small, thumb, medium, display (the four image files)
+// Saves the files to R2 and adds a row to the photos table.
 //
 // The browser did the resizing, so the 25 MB original never arrives here.
 // We still check everything: never trust what a browser sends.
@@ -21,6 +22,15 @@ const FORMATS = [
   },
 ];
 
+// thumb and display are required. small and medium (phone sizes) are optional,
+// so an upload page left open from before the update still works.
+const SIZES = [
+  { name: "small", required: false },
+  { name: "thumb", required: true },
+  { name: "medium", required: false },
+  { name: "display", required: true },
+];
+
 export async function onRequestPost({ request, env }) {
   let form;
   try {
@@ -33,6 +43,7 @@ export async function onRequestPost({ request, env }) {
   const width = Number(form.get("width"));
   const height = Number(form.get("height"));
   const altText = String(form.get("alt_text") || "").trim().slice(0, 500);
+  const cameraInfo = String(form.get("camera_info") || "").trim().slice(0, 200);
 
   if (!Number.isInteger(width) || !Number.isInteger(height) ||
       width < 1 || height < 1 || width > 10000 || height > 10000) {
@@ -42,34 +53,40 @@ export async function onRequestPost({ request, env }) {
   const set = await env.DB.prepare(`SELECT id FROM sets WHERE id = ?`).bind(setId).first();
   if (!set) return error("That set does not exist.", 404);
 
-  const thumb = await checkImage(form.get("thumb"), "thumb");
-  if (thumb.error) return error(thumb.error);
-  const display = await checkImage(form.get("display"), "display");
-  if (display.error) return error(display.error);
+  // Check every file first, before storing anything.
+  const files = {};
+  for (const { name, required } of SIZES) {
+    if (!required && !form.get(name)) continue;
+    const checked = await checkImage(form.get(name), name);
+    if (checked.error) return error(checked.error);
+    files[name] = checked;
+  }
 
   // A random id makes every key unique, which is what lets /img/ cache forever.
   const id = crypto.randomUUID();
-  const thumbKey = `photos/${setId}/${id}-thumb.${thumb.format.ext}`;
-  const displayKey = `photos/${setId}/${id}-display.${display.format.ext}`;
-
-  await Promise.all([
-    env.BUCKET.put(thumbKey, thumb.bytes, { httpMetadata: { contentType: thumb.format.type } }),
-    env.BUCKET.put(displayKey, display.bytes, { httpMetadata: { contentType: display.format.type } }),
-  ]);
+  const keys = {};
+  for (const [name, file] of Object.entries(files)) {
+    keys[name] = `photos/${setId}/${id}-${name}.${file.format.ext}`;
+  }
+  await Promise.all(Object.entries(files).map(([name, file]) =>
+    env.BUCKET.put(keys[name], file.bytes, { httpMetadata: { contentType: file.format.type } })
+  ));
+  const totalBytes = Object.values(files).reduce((sum, file) => sum + file.bytes.byteLength, 0);
 
   try {
     const photo = await env.DB.prepare(
-      `INSERT INTO photos (set_id, thumb_key, display_key, width, height, alt_text, size_bytes, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?,
+      `INSERT INTO photos (set_id, small_key, thumb_key, medium_key, display_key, width, height,
+                           alt_text, camera_info, size_bytes, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos WHERE set_id = ?))
-       RETURNING id, thumb_key, display_key, width, height, alt_text, size_bytes`
-    ).bind(setId, thumbKey, displayKey, width, height, altText,
-           thumb.bytes.byteLength + display.bytes.byteLength, setId).first();
+       RETURNING id, thumb_key, display_key, width, height, alt_text, camera_info, size_bytes`
+    ).bind(setId, keys.small ?? null, keys.thumb, keys.medium ?? null, keys.display, width, height,
+           altText, cameraInfo, totalBytes, setId).first();
     return Response.json(photo, { status: 201 });
   } catch (err) {
     // The files are saved but the database row failed: remove the files so
     // they do not sit in storage forever, invisible but still counting.
-    await env.BUCKET.delete([thumbKey, displayKey]);
+    await env.BUCKET.delete(Object.values(keys));
     throw err;
   }
 }

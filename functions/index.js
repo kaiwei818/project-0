@@ -1,6 +1,7 @@
 // GET /
-// Serves public/index.html with the set cards already in it, plus link-preview
-// tags (sharing your home page shows the cover of your first set).
+// Serves public/index.html with the hero (the big featured photo: the cover of
+// your first set) and the set cards already in it, plus link-preview tags
+// (sharing your home page shows the cover of your first set).
 //
 // The cards are built here on the server, not in the browser, so the very first
 // version of the page has your real content. Google judges pages largely by that
@@ -8,7 +9,8 @@
 
 import { withPageMeta } from "../lib/meta.js";
 import { categoriesInUse, publishedSets } from "../lib/queries.js";
-import { escapeHtml, setCardHtml } from "../lib/render.js";
+import { escapeHtml, heroHtml, setCardHtml } from "../lib/render.js";
+import { SITE } from "../lib/site.js";
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -26,7 +28,17 @@ export async function onRequestGet({ request, env }) {
       categories.map((c) => button(`/?category=${encodeURIComponent(c.slug)}`, c.name, c === current)).join("")
     : "";
 
+  // The hero: only on the main home page, and only when the first set has a cover.
+  const featured = !category && sets[0]?.cover_thumb_key ? sets[0] : null;
+
   const filled = new HTMLRewriter()
+    .on("#hero", {
+      element(el) {
+        if (featured) el.setInnerContent(heroHtml(featured, SITE.description), { html: true });
+        else el.remove();
+      },
+    })
+    .on("#site-tagline", { element(el) { if (featured) el.remove(); } })
     .on("#set-grid", { element(el) { el.setInnerContent(sets.map(setCardHtml).join(""), { html: true }); } })
     .on("#category-nav", {
       element(el) {

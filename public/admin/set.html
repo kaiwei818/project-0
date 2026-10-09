@@ -6,12 +6,17 @@
   <meta name="robots" content="noindex">
   <title data-page="Set · Admin"></title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
 </head>
 <body>
   <header class="site-header admin-header">
     <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
     <nav>
       <a id="view-link" href="/" target="_blank">View set</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" hidden>
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+      </button>
     </nav>
   </header>
 
@@ -40,8 +45,11 @@
         <input id="details-slug" type="text" maxlength="60" required>
       </div>
       <p class="muted small">Changing it breaks links people already saved or shared.</p>
-      <label for="details-description">Description (optional: shown on the home page card and under the set's title)</label>
+      <label for="details-description">Description (optional: shown under the set's title)</label>
       <textarea id="details-description" rows="3" maxlength="2000"></textarea>
+      <label for="details-date">Date (optional: shown on the home page card as month and year, for example when the photos were taken)</label>
+      <input id="details-date" type="date">
+      <p class="muted small">Left empty, the card shows the month you created the set.</p>
       <fieldset class="category-picker">
         <legend>Categories</legend>
         <div id="category-boxes"></div>
@@ -57,10 +65,15 @@
     <section class="panel" aria-labelledby="wm-heading">
       <h2 id="wm-heading">Watermark and downloads</h2>
       <label class="checkbox">
-        <input type="checkbox" id="wm-on" checked> Add a watermark (repeated across every public size)
+        <input type="checkbox" id="wm-on" checked> Add a watermark to every public size
       </label>
       <label for="wm-text">Text</label>
       <input id="wm-text" type="text" maxlength="80" placeholder="© Your Name">
+      <fieldset class="wm-style" id="wm-style">
+        <legend>Style</legend>
+        <label class="checkbox"><input type="radio" name="wm-style" value="full" checked> Full: repeated across the whole photo (hardest to remove)</label>
+        <label class="checkbox"><input type="radio" name="wm-style" value="small"> Small: one line in the bottom-right corner (least distracting)</label>
+      </fieldset>
       <label class="checkbox">
         <input type="checkbox" id="keep-clean"> Also store a clean copy (no watermark) for licensed downloads
       </label>

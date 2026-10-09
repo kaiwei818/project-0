@@ -23,6 +23,7 @@ const baseTitle = document.title; // "Set · Admin | winstonlens"
 const wmOn = $("wm-on");
 const keepClean = $("keep-clean");
 const wmText = $("wm-text");
+const wmStyleInputs = [...document.querySelectorAll('input[name="wm-style"]')];
 
 let set = null;
 let items = [];          // every photo in the list, with its status
@@ -89,7 +90,7 @@ function showDetails(sent = null) {
   document.title = baseTitle.replace(/^Set/, set.title);
   $("view-link").href = $("preview-link").href = `/sets/${encodeURIComponent(set.slug)}`;
   showVisibility();
-  for (const [id, field] of [["details-title", "title"], ["details-slug", "slug"], ["details-description", "description"]]) {
+  for (const [id, field] of [["details-title", "title"], ["details-slug", "slug"], ["details-description", "description"], ["details-date", "shot_date"]]) {
     if (!sent || $(id).value === sent[field]) $(id).value = set[field];
   }
 }
@@ -101,7 +102,7 @@ $("details-form").addEventListener("submit", (event) => {
 
 // Like captions, the details also save by themselves when you leave a box
 // after changing it, so nothing typed gets lost if you forget the button.
-for (const id of ["details-title", "details-slug", "details-description"]) {
+for (const id of ["details-title", "details-slug", "details-description", "details-date"]) {
   $(id).addEventListener("change", () => {
     if ($(id).checkValidity()) saveDetails(); // skip an empty title or address
   });
@@ -121,6 +122,7 @@ async function saveDetailsNow() {
     title: $("details-title").value,
     slug: $("details-slug").value,
     description: $("details-description").value,
+    shot_date: $("details-date").value,
   };
   const response = await fetch(`/api/admin/sets/${setId}`, {
     method: "PATCH",
@@ -374,16 +376,24 @@ $("delete-set").addEventListener("click", async () => {
 try {
   wmText.value = localStorage.getItem("watermark-text") ?? "";
   wmOn.checked = localStorage.getItem("watermark-on") !== "false";
+  const style = localStorage.getItem("watermark-style") || "full";
+  for (const input of wmStyleInputs) input.checked = input.value === style;
 } catch {
   // Private browsing can block storage. The page still works without it.
 }
-for (const input of [wmText, wmOn]) {
+for (const input of [wmText, wmOn, ...wmStyleInputs]) {
   input.addEventListener("change", () => {
     try {
       localStorage.setItem("watermark-text", wmText.value);
       localStorage.setItem("watermark-on", String(wmOn.checked));
+      localStorage.setItem("watermark-style", watermarkStyle());
     } catch {}
   });
+}
+
+// "full" (tiled across the photo) or "small" (one line in the corner).
+function watermarkStyle() {
+  return wmStyleInputs.find((input) => input.checked)?.value || "full";
 }
 
 function currentWatermark() {
@@ -453,7 +463,7 @@ async function processItem(item) {
   const result = await new Promise((resolve) => {
     worker.onmessage = (event) => resolve(event.data);
     worker.onerror = () => resolve({ error: "Processing failed." });
-    worker.postMessage({ id: item.id, file: item.file, watermark: currentWatermark(), keepClean: keepClean.checked });
+    worker.postMessage({ id: item.id, file: item.file, watermark: currentWatermark(), watermarkStyle: watermarkStyle(), keepClean: keepClean.checked });
   });
 
   if (result.error) {
@@ -654,7 +664,9 @@ function renderSummary() {
   $("upload-button").textContent = `Upload ${ready || ""} ${ready === 1 ? "photo" : "photos"}`.replace("  ", " ");
 
   // The watermark is baked in while shrinking, so it cannot change mid-batch.
-  wmOn.disabled = wmText.disabled = keepClean.disabled = isBusy() || ready > 0;
+  const locked = isBusy() || ready > 0;
+  wmOn.disabled = wmText.disabled = keepClean.disabled = locked;
+  for (const input of wmStyleInputs) input.disabled = locked;
 }
 
 function isBusy() {

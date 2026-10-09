@@ -3,10 +3,14 @@
 // freeze the page. The page sends a file in, and this sends four small files back.
 //
 // Output for each photo:
-//   small    800 px on the long edge, quality 0.80, light watermark  (grids on phones)
-//   thumb   1200 px on the long edge, quality 0.85, light watermark  (grids on computers)
-//   medium  2000 px on the long edge, quality 0.88, strong watermark (viewer on phones)
-//   display 3000 px on the long edge, quality 0.90, strong watermark (viewer on computers)
+//   small    800 px on the long edge, quality 0.80  (grids on phones)
+//   thumb   1200 px on the long edge, quality 0.85  (grids on computers)
+//   medium  2000 px on the long edge, quality 0.88  (viewer on phones)
+//   display 3000 px on the long edge, quality 0.90  (viewer on computers)
+// Every one gets the watermark, in the style you picked on the upload page:
+//   full   repeated diagonally across the whole photo (strong on the viewer
+//          sizes, lighter on the grid sizes)
+//   small  one line in the bottom-right corner
 //   download 3000 px JPEG, NO watermark, only if you ticked "clean copy"; kept
 //            private and given out only with a license code
 // The browser picks the smallest one that still looks sharp on each screen
@@ -33,10 +37,10 @@ const SIZES = {
 };
 
 self.onmessage = async (event) => {
-  const { id, file, watermark, keepClean } = event.data;
+  const { id, file, watermark, watermarkStyle = "full", keepClean } = event.data;
   try {
     const [images, cameraInfo] = await Promise.all([
-      processPhoto(file, watermark, keepClean),
+      processPhoto(file, watermark, watermarkStyle, keepClean),
       readCameraInfo(file),
     ]);
     self.postMessage({ id, ...images, cameraInfo });
@@ -49,7 +53,7 @@ self.onmessage = async (event) => {
 
 // keepClean: also make a private, clean 3000 px JPEG ("download"), for
 // visitors with a license code. It is saved BEFORE any watermark is drawn.
-async function processPhoto(file, watermark, keepClean) {
+async function processPhoto(file, watermark, watermarkStyle, keepClean) {
   // "from-image" applies the camera's rotation flag, so portrait shots stand upright.
   const original = await createImageBitmap(file, { imageOrientation: "from-image" });
   const canvases = {};
@@ -71,9 +75,12 @@ async function processPhoto(file, watermark, keepClean) {
       blobs.download = await canvases.display.convertToBlob({ type: "image/jpeg", quality: 0.92 });
     }
 
-    // Now mark every public size: strong on the two viewer sizes, lighter on
-    // the grid sizes (still enough to spoil a saved copy).
-    if (watermark) {
+    // Now mark every public size.
+    if (watermark && watermarkStyle === "small") {
+      for (const name of Object.keys(SIZES)) drawCornerWatermark(canvases[name], watermark);
+    } else if (watermark) {
+      // Full: strong on the two viewer sizes, lighter on the grid sizes
+      // (still enough to spoil a saved copy).
       drawTiledWatermark(canvases.display, watermark, "strong");
       drawTiledWatermark(canvases.medium, watermark, "strong");
       drawTiledWatermark(canvases.thumb, watermark, "light");
@@ -162,6 +169,24 @@ function drawTiledWatermark(canvas, text, strength) {
       ctx.fillText(text, x, y);
     }
   }
+  ctx.restore();
+}
+
+// The "small" style: one line of text in the bottom-right corner, sized
+// relative to the photo so it looks the same at every size.
+function drawCornerWatermark(canvas, text) {
+  const ctx = canvas.getContext("2d");
+  const { width, height } = canvas;
+  const size = Math.max(10, Math.round(Math.max(width, height) * 0.018));
+  const margin = Math.round(size * 1.2);
+  ctx.save();
+  ctx.font = `500 ${size}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
+  ctx.textAlign = "right";
+  ctx.textBaseline = "bottom";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
+  ctx.shadowBlur = size * 0.3;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.fillText(text, width - margin, height - margin);
   ctx.restore();
 }
 

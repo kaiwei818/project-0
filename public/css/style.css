@@ -420,15 +420,21 @@ progress { width: 100%; height: 8px; }
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.7);
 }
-.lightbox-caption {
+.lightbox-info {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  margin: 0;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   text-align: center;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+}
+.lightbox-info p { margin: 0; }
+.lightbox-camera {
+  margin-top: 2px !important;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.02em;
 }
 
 .lightbox-button {
@@ -664,3 +670,55 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 }
 
 #queue-summary[data-state="error"] { color: #dc2626; font-weight: 600; }
+
+/* ---------- Site navigation (Work / About) ---------- */
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.site-nav { display: flex; gap: 20px; }
+.site-nav a { text-decoration: none; color: var(--muted); }
+.site-nav a:hover,
+.site-nav a[aria-current="page"] { color: var(--text); }
+.site-nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
+
+/* ---------- About page ---------- */
+.about {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+  padding-top: 16px;
+}
+.about-portrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.about h1 { margin-top: 0; }
+.about-bio { max-width: 62ch; }
+.about-bio p { line-height: 1.7; }
+.about h2 { font-size: 1.1rem; margin-top: 32px; }
+.about-contact { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.about-contact li { display: flex; gap: 12px; flex-wrap: wrap; }
+.contact-label { min-width: 90px; color: var(--muted); }
+/* The text-only layout when there is no portrait yet. */
+.about:not(:has(.about-portrait)) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 700px) {
+  .about { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+}
+
+/* ---------- Admin: About page editor ---------- */
+.portrait-editor { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.portrait-editor img { width: 140px; height: 140px; object-fit: cover; border-radius: 8px; }
+.portrait-editor .button-secondary { margin-left: 8px; }
+.button-like {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+}
+.panel input[type="email"],
+.panel input[type="url"] { width: 100%; max-width: 360px; margin-bottom: 12px; }
+.panel h2 + label { margin-top: 0; }
+.button-like:has(+ input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }

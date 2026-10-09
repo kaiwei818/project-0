@@ -3,7 +3,8 @@
 Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
 
 - **Public gallery:** sets (albums) of photos, a full-screen viewer with swipe and
-  keyboard controls, and link previews when you share a set.
+  keyboard controls and camera details, an About page, link previews when you
+  share a page, and images sized for each screen so phones load fast.
 - **Private admin area** at `/admin`: create sets as private drafts, publish,
   rename, reorder, and delete them;
   upload photos (shrunk and watermarked in your browser, so originals never leave
@@ -20,6 +21,8 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 4. [Photo viewer, deleting, and sharper photos](docs/lessons/04-viewer-delete-quality.md)
 5. [Managing photos, security, and going live](docs/lessons/05-manage-secure-deploy.md)
 6. [Branding, drafts, search engines, and the 404 page](docs/lessons/06-brand-drafts-seo.md)
+7. [Camera details, the About page, and faster phones](docs/lessons/07-camera-about-phones.md)
+8. [Moving to your own domain](docs/lessons/08-custom-domain.md)
 
 ---
 
@@ -114,7 +117,9 @@ Secrets never go in the code or on GitHub. `.dev.vars` is listed in `.gitignore`
 public/                  Files sent to browsers as they are
   index.html, set.html     Public pages
   admin/                   Admin pages (protected by functions/admin/_middleware.js)
-  js/                      Browser code (image-worker.js shrinks photos; lightbox.js is the viewer)
+  about.html               The About page (filled in by functions/about.js)
+  js/                      Browser code (image-worker.js shrinks photos, exif.js reads camera
+                           details, images.js picks image sizes, lightbox.js is the viewer)
   css/style.css            All styling, light and dark mode
   404.html                 The "page not found" page
 functions/               Server code; the file path is the web address
@@ -125,7 +130,7 @@ functions/               Server code; the file path is the web address
   api/admin/               Admin data; _middleware.js checks the login for all of it
   img/[[key]].js           Serves images from R2, with hotlink protection
   sets/[slug].js           Set pages with link-preview tags
-lib/                     Shared server code: site name (site.js), login, slugs, ordering, security headers, page tags
+lib/                     Shared server code: site name (site.js), settings, login, slugs, ordering, security headers, page tags
 migrations/              Database tables, one numbered file per change
 scripts/                 hash-password and seed-local
 ```
@@ -136,6 +141,7 @@ Public (read only):
 
 - `GET /api/sets`: all published sets with cover and photo count
 - `GET /api/sets/:slug`: one set with its photos (drafts only when logged in)
+- `GET /about`: the About page
 - `GET /robots.txt`, `GET /sitemap.xml`: for search engines
 - `GET /img/:key`: an image file (refuses other websites)
 
@@ -148,7 +154,9 @@ Admin (login required; writes must come from this site):
 - `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover, published)
 - `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
 - `POST /api/admin/photos`: upload one photo (thumbnail and display version)
-- `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, delete
+- `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, delete
+- `GET`, `PATCH /api/admin/about`: About page bio and contact details
+- `POST`, `DELETE /api/admin/about/portrait`: About page portrait
 
 ## Honest limits
 

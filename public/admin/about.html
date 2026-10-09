@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title data-page="About page · Admin"></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header admin-header">
+    <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
+    <nav>
+      <a href="/about" target="_blank">View About page</a>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="/admin/">All sets</a>
+    <h1>About page</h1>
+
+    <section class="panel" aria-labelledby="portrait-heading">
+      <h2 id="portrait-heading">Portrait</h2>
+      <div class="portrait-editor">
+        <img id="portrait-preview" alt="" hidden>
+        <div>
+          <p class="muted" id="portrait-status">No portrait yet.</p>
+          <label class="button-like" for="portrait-input">Choose a photo</label>
+          <input id="portrait-input" type="file" accept="image/jpeg,image/png,image/webp" class="visually-hidden">
+          <button type="button" id="portrait-remove" class="button-secondary" hidden>Remove</button>
+        </div>
+      </div>
+      <p class="muted small">Shrunk in your browser like set photos, without a watermark. Camera location data is removed.</p>
+    </section>
+
+    <!-- Like set details, every box saves by itself when you click outside it. -->
+    <form class="panel" id="about-form" aria-labelledby="bio-heading">
+      <h2 id="bio-heading">Bio</h2>
+      <label for="bio">A few paragraphs about you and your photography. Leave an empty line between paragraphs.</label>
+      <textarea id="bio" rows="8" maxlength="5000"></textarea>
+
+      <h2>Contact</h2>
+      <label for="email">Email</label>
+      <input id="email" type="email" maxlength="200" placeholder="you@example.com">
+      <label for="instagram">Instagram name</label>
+      <input id="instagram" type="text" maxlength="200" placeholder="winstonlens">
+      <label for="link_label">Other link: name (optional)</label>
+      <input id="link_label" type="text" maxlength="40" placeholder="LINE, YouTube, Behance...">
+      <label for="link_url">Other link: address</label>
+      <input id="link_url" type="url" maxlength="500" placeholder="https://...">
+
+      <div class="actions">
+        <button type="submit">Save</button>
+        <span class="save-status" id="about-status" role="status"></span>
+      </div>
+    </form>
+  </main>
+
+  <script src="/js/admin-about.js" type="module"></script>
+</body>
+</html>

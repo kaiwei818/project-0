@@ -12,7 +12,7 @@ export async function onRequestGet({ env, params }) {
   if (!set) return Response.json({ error: "Set not found" }, { status: 404 });
 
   const { results: photos } = await env.DB.prepare(
-    `SELECT id, thumb_key, width, height, caption, alt_text, size_bytes
+    `SELECT id, thumb_key, width, height, caption, alt_text, camera_info, size_bytes
      FROM photos WHERE set_id = ? ORDER BY sort_order, id`
   ).bind(set.id).all();
 
@@ -72,7 +72,7 @@ export async function onRequestPatch({ request, env, params }) {
 export async function onRequestDelete({ env, params }) {
   const setId = Number(params.id);
   const { results: photos } = await env.DB.prepare(
-    `SELECT thumb_key, display_key FROM photos WHERE set_id = ?`
+    `SELECT small_key, thumb_key, medium_key, display_key FROM photos WHERE set_id = ?`
   ).bind(setId).all();
 
   // Database first: once the rows are gone, nothing on the site points to the
@@ -86,7 +86,7 @@ export async function onRequestDelete({ env, params }) {
     return Response.json({ error: "Set not found" }, { status: 404 });
   }
 
-  const keys = photos.flatMap((p) => [p.thumb_key, p.display_key]);
+  const keys = photos.flatMap((p) => [p.small_key, p.thumb_key, p.medium_key, p.display_key]).filter(Boolean);
   // R2 deletes at most 1000 files per call.
   for (let i = 0; i < keys.length; i += 1000) {
     await env.BUCKET.delete(keys.slice(i, i + 1000));

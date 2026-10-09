@@ -7,12 +7,16 @@
 // It uses the built-in <dialog> element, which gives us for free: showing on top
 // of everything, closing on Escape, and keeping keyboard focus inside while open.
 
+import { img as imageUrl, viewerSrcset } from "./images.js";
+
 const SWIPE_DISTANCE = 50; // pixels a finger must travel to count as a swipe
 
 export function createLightbox(photos) {
   const dialog = document.getElementById("lightbox");
   const img = document.getElementById("lightbox-img");
+  const info = document.getElementById("lightbox-info");
   const caption = document.getElementById("lightbox-caption");
+  const camera = document.getElementById("lightbox-camera");
   const counter = document.getElementById("lightbox-counter");
   const prevButton = document.getElementById("lightbox-prev");
   const nextButton = document.getElementById("lightbox-next");
@@ -23,18 +27,21 @@ export function createLightbox(photos) {
     index = (newIndex + photos.length) % photos.length; // wrap around at the ends
     const photo = photos[index];
 
-    // Show the thumbnail at once (already downloaded, so instant), then swap in
-    // the large version as soon as it arrives. No blank screen while waiting.
-    img.src = `/img/${photo.thumb_key}`;
+    // Show the grid picture at once (already downloaded, so instant), then swap
+    // in the large version as soon as it arrives. No blank screen while waiting.
+    img.removeAttribute("srcset");
+    img.src = photo.gridSrc || imageUrl(photo.thumb_key);
     img.alt = photo.alt_text;
-    const large = new Image();
+    const large = loadLarge(photo);
     large.onload = () => {
-      if (photos[index] === photo) img.src = large.src; // still on this photo?
+      if (photos[index] === photo) img.src = large.currentSrc || large.src; // still on this photo?
     };
-    large.src = `/img/${photo.display_key}`;
 
     caption.textContent = photo.caption;
     caption.hidden = !photo.caption;
+    camera.textContent = photo.camera_info || "";
+    camera.hidden = !photo.camera_info;
+    info.hidden = caption.hidden && camera.hidden;
     counter.textContent = `${index + 1} / ${photos.length}`;
     const single = photos.length === 1;
     prevButton.hidden = nextButton.hidden = single;
@@ -45,8 +52,17 @@ export function createLightbox(photos) {
 
   // Start downloading the neighbors, so swiping to them feels instant.
   function preload(i) {
-    const photo = photos[(i + photos.length) % photos.length];
-    new Image().src = `/img/${photo.display_key}`;
+    loadLarge(photos[(i + photos.length) % photos.length]);
+  }
+
+  // The viewer fills the screen, so "sizes" is the screen width. The browser
+  // then picks the 2000 px version on phones and the 3000 px one on big screens.
+  function loadLarge(photo) {
+    const large = new Image();
+    large.sizes = "100vw";
+    large.srcset = viewerSrcset(photo); // empty for older photos: then src is used
+    large.src = imageUrl(photo.display_key);
+    return large;
   }
 
   function open(startIndex, opener) {

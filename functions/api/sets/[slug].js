@@ -15,7 +15,7 @@ export async function onRequestGet({ request, env, params }) {
   }
 
   const { results: photos } = await env.DB.prepare(
-    `SELECT id, thumb_key, display_key, width, height, caption, alt_text
+    `SELECT id, small_key, thumb_key, medium_key, display_key, width, height, caption, alt_text, camera_info
      FROM photos WHERE set_id = ?
      ORDER BY sort_order, id`
   ).bind(set.id).all();

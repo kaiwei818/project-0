@@ -2,7 +2,7 @@
 # "wrangler" is Cloudflare's command line tool. It reads this file to know
 # where the website files are and which database and storage bucket to use.
 
-name = "photo-portfolio"
+name = "winstonlens"
 compatibility_date = "2025-09-01"
 
 # The folder with the files visitors download (HTML, CSS, JS).
@@ -14,7 +14,7 @@ pages_build_output_dir = "public"
 binding = "DB"
 database_name = "portfolio-db"
 # Replace this with the real id after running: npx wrangler d1 create portfolio-db
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "3fd8c527-65cd-496a-94c2-b021b350b22a"
 migrations_dir = "migrations"
 
 # R2 = the storage bucket for the compressed image files.

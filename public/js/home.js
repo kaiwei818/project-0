@@ -1,5 +1,7 @@
 // Home page: ask the API for the list of sets, then build one card per set.
 
+import { gridSrcset, img as imageUrl } from "./images.js";
+
 const grid = document.getElementById("set-grid");
 const status = document.getElementById("status");
 
@@ -27,7 +29,14 @@ function createSetCard(set) {
 
   if (set.cover_thumb_key) {
     const img = document.createElement("img");
-    img.src = `/img/${set.cover_thumb_key}`;
+    // Cards are the full width on phones and about 400 px wide on computers.
+    // The browser picks the 800 px or the 1200 px cover from that (see images.js).
+    img.sizes = "(max-width: 600px) calc(100vw - 32px), 400px";
+    img.srcset = gridSrcset(
+      { width: set.cover_width, height: set.cover_height },
+      { small_key: set.cover_small_key, thumb_key: set.cover_thumb_key }
+    );
+    img.src = imageUrl(set.cover_thumb_key);
     img.alt = ""; // decorative: the title below already names the set
     img.loading = "lazy";
     link.append(img);

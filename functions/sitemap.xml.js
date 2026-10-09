@@ -9,7 +9,7 @@ export async function onRequestGet({ request, env }) {
     `SELECT slug FROM sets WHERE published = 1 ORDER BY sort_order, id`
   ).all();
 
-  const urls = [`${origin}/`, ...sets.map((s) => `${origin}/sets/${encodeURIComponent(s.slug)}`)];
+  const urls = [`${origin}/`, `${origin}/about`, ...sets.map((s) => `${origin}/sets/${encodeURIComponent(s.slug)}`)];
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',

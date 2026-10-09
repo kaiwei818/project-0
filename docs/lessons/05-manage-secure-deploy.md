@@ -9,6 +9,9 @@ hardening (step 8), and putting the site on the internet (step 9).
 
 ### On the dashboard (`/admin`)
 
+- **Storage:** the bar shows how much of the free 10 GB you use. Click **See
+  storage by set** to open a list of every set, largest first, with its size,
+  photo count, and its share of the space used so far.
 - **Reorder sets:** drag the ⠿ handle, or use ↑ ↓. The order here is the order on
   the home page.
 - **Delete** a set (asks first).
@@ -21,7 +24,7 @@ hardening (step 8), and putting the site on the internet (step 9).
 
 | Control | What it does |
 |---|---|
-| Drag the picture | Move it anywhere in the set |
+| Drag the picture (mouse) or the ⠿ grip (finger) | Move it anywhere in the set |
 | ← → | Move it one place earlier or later |
 | ☆ / ★ | Make it the cover on the home page (★ = current cover) |
 | × | Delete it |
@@ -39,12 +42,27 @@ then numbers them 0, 1, 2, 3 in one go (`lib/order.js`). If the list does not
 match, for example because you deleted a photo in another tab, it refuses and the
 page reloads, instead of saving a broken order.
 
-### Why both dragging and buttons
+### How dragging works
 
-Dragging is the natural way on a computer, but the browser's built-in drag and
-drop does not work with fingers on a phone or tablet, or with a keyboard. The
-arrow buttons work everywhere. After you press one, keyboard focus stays on it,
-so pressing Enter again keeps moving the same photo.
+The browser has built-in drag and drop, but it does not work with fingers on a
+phone or tablet, and on a Mac it only shows a faint picture of what you drag. So
+`public/js/sortable.js` does its own dragging with **pointer events**, which treat
+a mouse, a trackpad, a pen, and a finger the same way:
+
+1. Press and move a few pixels. (A plain click still works as a click.)
+2. A floating copy follows your pointer; a dashed slot shows where it will land.
+3. Hover over another item and the slot takes its place. The other items slide
+   instead of jumping (a "FLIP" animation: note where everything was, move it,
+   then animate from the old spot to the new one).
+4. Near the top or bottom of the window, the page scrolls by itself.
+5. Let go, and the new order is saved.
+
+On a phone, touching a picture must still scroll the page, so fingers drag the
+⠿ grip instead. The CSS `touch-action: none` on the grip tells the browser
+"a finger here drags, it does not scroll".
+
+The ← → and ↑ ↓ buttons still exist for keyboard users. After you press one,
+focus stays on it, so pressing Enter again keeps moving the same item.
 
 ### Changing the web address
 

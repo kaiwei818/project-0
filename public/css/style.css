@@ -481,13 +481,64 @@ textarea {
 .icon-button.danger { color: #dc2626; }
 .icon-button.danger:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
 
-.drag-handle {
+/* ---------- Drag to reorder (see js/sortable.js) ---------- */
+.drag-handle,
+.drag-surface {
   cursor: grab;
-  color: var(--muted);
-  font-size: 1.2rem;
-  padding: 0 4px;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.dragging { opacity: 0.4; }
+/* "none": a finger on the handle drags the item instead of scrolling the page. */
+.drag-handle { touch-action: none; color: var(--muted); font-size: 1.2rem; padding: 4px; }
+
+/* Lets sortable.js read item positions relative to the list. */
+.admin-set-list,
+.photo-editor { position: relative; }
+
+/* The empty slot that shows where the item will land. */
+.drag-slot {
+  outline: 2px dashed var(--focus);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.drag-slot > * { visibility: hidden; }
+
+/* The floating copy that follows the pointer. */
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  display: block !important;
+  list-style: none;
+  pointer-events: none; /* so we can see what is underneath it */
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  background: var(--card);
+  opacity: 0.95;
+}
+.drag-ghost > li { border-bottom: 0 !important; }
+body.is-dragging,
+body.is-dragging * { cursor: grabbing !important; user-select: none; }
+
+.photo-grip {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
 .admin-set-list li { gap: 8px; }
 .admin-set-list .muted { margin-right: 8px; }
 
@@ -533,3 +584,17 @@ textarea {
 .photo-card-field input { font-size: 0.9rem; padding: 6px 8px; }
 .photo-card-tools { display: flex; gap: 6px; }
 .photo-card-tools .danger { margin-left: auto; }
+
+/* ---------- Storage by set ---------- */
+.storage-details { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.storage-details summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.storage-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; }
+.storage-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  font-size: 0.9rem;
+}
+.storage-list a { overflow-wrap: anywhere; }
+.storage-size { color: var(--muted); white-space: nowrap; }
+.storage-list .meter { grid-column: 1 / -1; height: 6px; }

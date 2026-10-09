@@ -7,7 +7,7 @@ A photography portfolio that runs on Cloudflare's free tier:
 - **Private admin area** at `/admin`: create, rename, reorder, and delete sets;
   upload photos (shrunk and watermarked in your browser, so originals never leave
   your computer); reorder photos, choose covers, and write captions and
-  descriptions; watch your storage use.
+  descriptions; watch your storage use, overall and per set.
 
 The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 
@@ -133,7 +133,7 @@ Public (read only):
 Admin (login required; writes must come from this site):
 
 - `POST /api/admin/login`, `POST /api/admin/logout`
-- `GET /api/admin/stats`: storage used
+- `GET /api/admin/stats`: storage used, in total and per set
 - `GET /api/admin/sets`, `POST /api/admin/sets`
 - `PATCH /api/admin/sets/order`: order of sets
 - `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover)

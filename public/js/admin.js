@@ -16,6 +16,36 @@ async function loadStats() {
   document.getElementById("storage-fill").style.width = `${Math.min(percent, 100)}%`;
   document.getElementById("counts").textContent =
     `${stats.set_count} sets, ${stats.photo_count} photos`;
+  renderStorageBySet(stats);
+}
+
+// One row per set, largest first. The bar shows the set's share of the space
+// used so far (not of the 10 GB), so the differences between sets are visible.
+function renderStorageBySet(stats) {
+  const list = document.getElementById("storage-list");
+  list.replaceChildren(...stats.sets.map((set) => {
+    const share = stats.bytes_used ? (set.bytes_used / stats.bytes_used) * 100 : 0;
+    const item = document.createElement("li");
+
+    const name = document.createElement("a");
+    name.href = `/admin/set?id=${set.id}`;
+    name.textContent = set.title;
+    const size = document.createElement("span");
+    size.className = "storage-size";
+    size.textContent = `${formatBytes(set.bytes_used)} · ${set.photo_count} ${set.photo_count === 1 ? "photo" : "photos"}`;
+
+    const meter = document.createElement("div");
+    meter.className = "meter";
+    const fill = document.createElement("div");
+    fill.className = "meter-fill";
+    fill.style.width = `${share}%`;
+    meter.append(fill);
+    meter.setAttribute("role", "img");
+    meter.setAttribute("aria-label", `${Math.round(share)}% of the space used`);
+
+    item.append(name, size, meter);
+    return item;
+  }));
 }
 
 function formatBytes(bytes) {
@@ -47,7 +77,6 @@ function createSetRow(set) {
   const handle = document.createElement("span");
   handle.className = "drag-handle";
   handle.textContent = "⠿";
-  handle.draggable = true;
   handle.title = "Drag to reorder";
   handle.setAttribute("aria-hidden", "true");
 
@@ -88,7 +117,7 @@ function moveSet(item, direction) {
   saveSetOrder();
 }
 
-makeSortable(setList, { axis: "y", onChange: saveSetOrder });
+makeSortable(setList, { onChange: saveSetOrder });
 
 // The order on this list is the order on the home page.
 async function saveSetOrder() {

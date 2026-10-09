@@ -86,7 +86,7 @@ function flash(element, text) {
 // ---------- Photos already in the set ----------
 
 const existing = $("existing");
-makeSortable(existing, { axis: "x", onChange: savePhotoOrder });
+makeSortable(existing, { onChange: savePhotoOrder });
 
 function renderExisting() {
   existing.replaceChildren(...set.photos.map(createPhotoCard));
@@ -101,15 +101,23 @@ function createPhotoCard(photo, index) {
   const isCover = coverId() === photo.id;
   if (isCover) item.classList.add("is-cover");
 
-  // The image is the drag handle (images are draggable by default).
+  // With a mouse, drag the picture itself. With a finger, drag the ⠿ grip, so
+  // touching a picture can still scroll the page (see sortable.js).
   const figure = document.createElement("div");
   figure.className = "photo-card-image";
   const img = document.createElement("img");
   img.src = `/img/${photo.thumb_key}`;
   img.alt = "";
   img.loading = "lazy";
+  img.draggable = false; // turn off the browser's own image dragging
+  img.className = "drag-surface";
   img.title = "Drag to reorder";
-  figure.append(img);
+  const grip = document.createElement("span");
+  grip.className = "drag-handle photo-grip";
+  grip.textContent = "⠿";
+  grip.title = "Drag to reorder";
+  grip.setAttribute("aria-hidden", "true");
+  figure.append(img, grip);
   if (isCover) {
     const badge = document.createElement("span");
     badge.className = "cover-badge";

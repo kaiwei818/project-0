@@ -40,7 +40,7 @@
         <input id="details-slug" type="text" maxlength="60" required>
       </div>
       <p class="muted small">Changing it breaks links people already saved or shared.</p>
-      <label for="details-description">Description (optional, shown under the title)</label>
+      <label for="details-description">Description (optional: shown on the home page card and under the set's title)</label>
       <textarea id="details-description" rows="3" maxlength="2000"></textarea>
       <div class="actions">
         <button type="submit">Save details</button>
@@ -80,6 +80,7 @@
       </figure>
       <div class="actions">
         <button type="button" id="upload-button" disabled>Upload</button>
+        <button type="button" id="retry-button" class="button-secondary" hidden>Retry failed</button>
         <button type="button" id="clear-button" class="button-secondary">Clear list</button>
       </div>
       <ul class="queue" id="queue"></ul>

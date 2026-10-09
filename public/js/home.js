@@ -40,7 +40,14 @@ function createSetCard(set) {
   count.className = "count";
   count.textContent = `${set.photo_count} ${set.photo_count === 1 ? "photo" : "photos"}`;
 
-  link.append(title, count);
+  link.append(title);
+  if (set.description) {
+    const description = document.createElement("p");
+    description.className = "set-card-description";
+    description.textContent = set.description;
+    link.append(description);
+  }
+  link.append(count);
   item.append(link);
   return item;
 }

@@ -5,13 +5,16 @@
 //   waiting -> processing (in a Web Worker) -> ready (preview shown)
 //           -> uploading -> done
 // Two photos are processed at a time. More would not be faster (your computer
-// has a limited number of cores) but would use a lot more memory.
+// has a limited number of cores) but would use a lot more memory. If a photo
+// fails (usually because the browser ran out of image memory, which happens in
+// Safari), it is retried once automatically, and from then on photos are
+// processed one at a time.
 // Uploads go one at a time, so the photos keep the order you chose them in:
 // the server adds each photo after the last one it received.
 
 import { currentIds, makeSortable, moveItem } from "./sortable.js";
 
-const PARALLEL = 2;
+let parallel = 2;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const setId = Number(new URLSearchParams(location.search).get("id"));
 
@@ -54,8 +57,20 @@ function showDetails() {
   $("details-description").value = set.description;
 }
 
-$("details-form").addEventListener("submit", async (event) => {
+$("details-form").addEventListener("submit", (event) => {
   event.preventDefault();
+  saveDetails();
+});
+
+// Like captions, the details also save by themselves when you leave a box
+// after changing it, so nothing typed gets lost if you forget the button.
+for (const id of ["details-title", "details-slug", "details-description"]) {
+  $(id).addEventListener("change", () => {
+    if ($(id).checkValidity()) saveDetails(); // skip an empty title or address
+  });
+}
+
+async function saveDetails() {
   const status = $("details-status");
   const response = await fetch(`/api/admin/sets/${setId}`, {
     method: "PATCH",
@@ -75,7 +90,7 @@ $("details-form").addEventListener("submit", async (event) => {
   Object.assign(set, data);
   showDetails(); // shows the cleaned-up web address, e.g. "My Trip!" -> "my-trip"
   flash(status, "Saved");
-});
+}
 
 // ---------- Draft / published ----------
 
@@ -351,7 +366,7 @@ function addFiles(fileList) {
 
 function pumpProcessing() {
   let item;
-  while (processing < PARALLEL && (item = items.find((i) => i.status === "waiting"))) {
+  while (processing < parallel && (item = items.find((i) => i.status === "waiting"))) {
     processing++;
     item.status = "processing";
     renderItem(item);
@@ -371,10 +386,21 @@ async function processItem(item) {
     worker.onerror = () => resolve({ error: "Processing failed." });
     worker.postMessage({ id: item.id, file: item.file, watermark: currentWatermark() });
   });
-  idleWorkers.push(worker);
+
+  if (result.error) {
+    // Throw away this worker: a fresh one starts with all of its memory free.
+    worker.terminate();
+  } else {
+    idleWorkers.push(worker);
+  }
 
   if (item.status === "removed") return; // the list was cleared meanwhile
-  if (result.error) {
+  if (result.error && !item.retried) {
+    // First failure: slow down to one photo at a time and try this one again.
+    item.retried = true;
+    parallel = 1;
+    item.status = "waiting";
+  } else if (result.error) {
     item.status = "error";
     item.error = result.error;
   } else {
@@ -438,11 +464,36 @@ async function uploadItem(item) {
     }
     item.status = "done";
   } catch (err) {
-    item.status = "error";
-    item.error = `Upload failed: ${err.message}`;
+    if (!item.uploadRetried) {
+      // Networks hiccup. Try once more before calling it a failure.
+      item.uploadRetried = true;
+      item.status = "ready";
+    } else {
+      item.status = "error";
+      item.error = `Upload failed: ${err.message}`;
+    }
   }
   renderItem(item);
 }
+
+// ---------- Retrying ----------
+
+// A photo can be tried again if it is a supported type: either its shrinking
+// failed (start over), or its upload failed (send the finished files again).
+function canRetry(item) {
+  return item.status === "error" && ALLOWED_TYPES.includes(item.file.type);
+}
+
+$("retry-button").addEventListener("click", () => {
+  for (const item of items.filter(canRetry)) {
+    item.status = item.result ? "ready" : "waiting";
+    item.retried = item.uploadRetried = false;
+    item.error = "";
+    renderItem(item);
+  }
+  pumpProcessing();
+  if (uploadStarted) pumpUploads();
+});
 
 function extension(blob) {
   return blob.type === "image/webp" ? "webp" : "jpg";
@@ -515,8 +566,10 @@ function renderSummary() {
   else if (uploading > 0 || (uploadStarted && ready > 0)) text = `Uploading: ${done} of ${total - errors} sent.`;
   else if (uploadStarted) text = `Finished: ${done} uploaded.`;
   else text = `${ready} ${ready === 1 ? "photo" : "photos"} ready. Check the preview, then upload.`;
-  if (errors) text += ` ${errors} could not be used (see below).`;
+  if (errors) text += ` ${errors} failed: see the red messages below.`;
   $("queue-summary").textContent = text;
+  $("queue-summary").dataset.state = errors ? "error" : "";
+  $("retry-button").hidden = !items.some(canRetry) || isBusy();
 
   // Each photo counts twice: once for shrinking, once for uploading.
   $("queue-progress").max = Math.max(1, (total - errors) * 2);

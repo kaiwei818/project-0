@@ -24,28 +24,41 @@ self.onmessage = async (event) => {
   try {
     self.postMessage({ id, ...(await processPhoto(file, watermark)) });
   } catch (err) {
-    self.postMessage({ id, error: `Could not read this image (${err.message}).` });
+    // Usually the browser ran out of memory for images (Safari has a strict
+    // limit), or the file is damaged. The upload page retries it once by itself.
+    self.postMessage({ id, error: `Could not process this photo (${err.message || err}).` });
   }
 };
 
 async function processPhoto(file, watermark) {
   // "from-image" applies the camera's rotation flag, so portrait shots stand upright.
   const original = await createImageBitmap(file, { imageOrientation: "from-image" });
+  let display, thumb;
   try {
-    const display = shrink(original, DISPLAY_EDGE);
+    display = shrink(original, DISPLAY_EDGE);
+    original.close(); // free the ~100 MB of decoded pixels as early as possible
+
     // Make the thumbnail from the display version (much faster than from the
     // original), before the watermark goes on.
-    const thumb = shrink(display, THUMB_EDGE);
+    thumb = shrink(display, THUMB_EDGE);
     if (watermark) drawWatermark(display, watermark);
 
-    const [thumbBlob, displayBlob] = await Promise.all([
-      encode(thumb, THUMB_QUALITY),
-      encode(display, DISPLAY_QUALITY),
-    ]);
+    // One at a time keeps less memory in use than both at once.
+    const thumbBlob = await encode(thumb, THUMB_QUALITY);
+    const displayBlob = await encode(display, DISPLAY_QUALITY);
     return { thumb: thumbBlob, display: displayBlob, width: display.width, height: display.height };
   } finally {
-    original.close(); // free the ~100 MB of decoded pixels right away
+    original.close(); // safe to call twice
+    release(display);
+    release(thumb);
   }
+}
+
+// A canvas keeps its pixels in memory until the browser gets around to cleaning
+// up, which Safari does slowly. Shrinking it to 0 x 0 frees the memory at once.
+// Without this, Safari ran out of image memory after a few large photos.
+function release(canvas) {
+  if (canvas) canvas.width = canvas.height = 0;
 }
 
 // Shrinking 6000 px straight down to 500 px skips most pixels and looks jagged.
@@ -57,9 +70,13 @@ function shrink(source, longEdge) {
 
   let current = source;
   while (current.width / 2 >= targetWidth) {
-    current = draw(current, Math.round(current.width / 2), Math.round(current.height / 2));
+    const smaller = draw(current, Math.round(current.width / 2), Math.round(current.height / 2));
+    if (current !== source) release(current); // the in-between step is no longer needed
+    current = smaller;
   }
-  return draw(current, targetWidth, targetHeight);
+  const result = draw(current, targetWidth, targetHeight);
+  if (current !== source) release(current);
+  return result;
 }
 
 function draw(source, width, height) {
@@ -84,9 +101,16 @@ function drawWatermark(canvas, text) {
 }
 
 // WebP is about 30% smaller than JPEG at the same quality. Safari cannot create
-// WebP files, and quietly hands back a PNG instead, so we check and fall back to JPEG.
+// WebP files, and quietly hands back a large PNG instead. We find out once, with
+// a tiny test image, and then go straight to JPEG in browsers without WebP,
+// instead of wasting time and memory making a big PNG for every photo.
+let webpSupported;
+
 async function encode(canvas, quality) {
-  const webp = await canvas.convertToBlob({ type: "image/webp", quality });
-  if (webp.type === "image/webp") return webp;
-  return canvas.convertToBlob({ type: "image/jpeg", quality });
+  if (webpSupported === undefined) {
+    const test = new OffscreenCanvas(2, 2);
+    test.getContext("2d"); // a canvas must have a drawing context before it can be saved
+    webpSupported = (await test.convertToBlob({ type: "image/webp" })).type === "image/webp";
+  }
+  return canvas.convertToBlob({ type: webpSupported ? "image/webp" : "image/jpeg", quality });
 }

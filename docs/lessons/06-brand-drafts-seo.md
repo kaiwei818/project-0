@@ -120,3 +120,42 @@ Then:
 3. Click **Publish**, then refresh the private window. Now it is.
 4. Open http://localhost:8788/anything-wrong to see the 404 page.
 5. Open http://localhost:8788/robots.txt and http://localhost:8788/sitemap.xml.
+
+---
+
+## Part E: Two fixes from testing
+
+### Set descriptions
+
+The description now also shows on the set's card on the home page (up to two
+lines), and under the title on the set page, keeping the line breaks you typed.
+Like captions, set details now save by themselves when you click outside a box;
+the **Save details** button still works too.
+
+### Some photos in a batch failing
+
+**What happened:** of the photos you selected, only some uploaded.
+
+**Why:** shrinking a 25 MB photo briefly needs about 100 MB of memory for its
+pixels. Safari limits how much memory images may use, and it frees that memory
+slowly. After a few photos it ran out, and the next ones failed (each failed card
+showed a red message, easy to miss in a long list).
+
+**The fixes** (`public/js/image-worker.js` and `public/js/admin-set.js`):
+
+1. Memory is freed the moment each step is done: the canvas is shrunk to 0 x 0
+   pixels, which makes the browser let go of it at once.
+2. Safari cannot make WebP files. Before, every photo was first saved as a large
+   PNG by mistake and then redone as JPEG. Now the page checks once and goes
+   straight to JPEG.
+3. If a photo fails, it is tried again automatically, and from then on photos are
+   shrunk one at a time (slower, but much lighter on memory). The background
+   thread that failed is thrown away and replaced by a fresh one.
+4. A failed upload (for example, Wi-Fi dropping for a moment) is also retried once
+   by itself.
+5. If something still fails, the summary turns red with the number of failures,
+   and a **Retry failed** button appears.
+
+A photo that is damaged, or not a JPEG, PNG, or WebP (for example a RAW `.ARW`
+or `.CR3` file, or an iPhone `.HEIC`), cannot be fixed by retrying; its card says
+why.

@@ -3,9 +3,10 @@
 // The journey of each photo:
 //   waiting -> processing (in a Web Worker) -> ready (preview shown)
 //           -> uploading -> done
-// Two photos are processed at a time, and two are uploaded at a time. More would
-// not be faster (your computer has a limited number of cores, and the network a
-// limited speed), but it would use a lot more memory.
+// Two photos are processed at a time. More would not be faster (your computer
+// has a limited number of cores) but would use a lot more memory.
+// Uploads go one at a time, so the photos keep the order you chose them in:
+// the server adds each photo after the last one it received.
 
 const PARALLEL = 2;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -41,17 +42,52 @@ async function loadSet() {
 
 function renderExisting() {
   const list = $("existing");
-  list.replaceChildren(...set.photos.map((photo) => {
+  list.replaceChildren(...set.photos.map((photo, index) => {
     const item = document.createElement("li");
     const img = document.createElement("img");
     img.src = `/img/${photo.thumb_key}`;
     img.alt = photo.alt_text;
     img.loading = "lazy";
-    item.append(img);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "photo-delete";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `Delete photo ${index + 1}`);
+    remove.addEventListener("click", () => deletePhoto(photo));
+
+    item.append(img, remove);
     return item;
   }));
   $("existing-empty").hidden = set.photos.length > 0;
 }
+
+// ---------- Deleting ----------
+
+async function deletePhoto(photo) {
+  if (!confirm("Delete this photo?\n\nThis cannot be undone.")) return;
+  const response = await fetch(`/api/admin/photos/${photo.id}`, { method: "DELETE" });
+  if (!response.ok) {
+    alert("Could not delete the photo. Please try again.");
+    return;
+  }
+  set.photos = set.photos.filter((p) => p.id !== photo.id);
+  renderExisting();
+}
+
+$("delete-set").addEventListener("click", async () => {
+  if (!set) return;
+  const count = set.photos.length;
+  const photos = `${count} ${count === 1 ? "photo" : "photos"}`;
+  if (!confirm(`Delete the set "${set.title}" and its ${photos}?\n\nThis cannot be undone.`)) return;
+
+  const response = await fetch(`/api/admin/sets/${set.id}`, { method: "DELETE" });
+  if (!response.ok) {
+    alert("Could not delete the set. Please try again.");
+    return;
+  }
+  location.href = "/admin/";
+});
 
 // ---------- Watermark settings (remembered in this browser) ----------
 
@@ -174,7 +210,7 @@ $("upload-button").addEventListener("click", () => {
 
 function pumpUploads() {
   let item;
-  while (uploading < PARALLEL && (item = items.find((i) => i.status === "ready"))) {
+  while (uploading < 1 && (item = items.find((i) => i.status === "ready"))) {
     uploading++;
     item.status = "uploading";
     renderItem(item);

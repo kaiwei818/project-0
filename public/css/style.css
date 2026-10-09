@@ -339,3 +339,137 @@ progress { width: 100%; height: 8px; }
   object-fit: cover;
   border-radius: 4px;
 }
+
+/* ---------- Deleting ---------- */
+.button-danger {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid currentColor;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+.button-danger:hover { background: #dc2626; color: #fff; }
+
+.admin-set-list li { align-items: center; }
+.admin-set-list a { flex: 1; }
+
+.admin-thumbs li { position: relative; }
+.photo-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.photo-delete:hover { background: #dc2626; }
+
+.danger-zone {
+  margin-top: 48px;
+  padding: 20px 24px;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+}
+.danger-zone h2 { margin: 0 0 4px; font-size: 1rem; color: #dc2626; }
+
+/* ---------- Tappable photos ---------- */
+.thumb-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: zoom-in;
+}
+.thumb-button img { transition: opacity 0.15s; }
+.thumb-button:hover img { opacity: 0.9; }
+
+/* ---------- Full-screen viewer ---------- */
+.no-scroll { overflow: hidden; }
+
+.lightbox {
+  /* <dialog> has a default box; make it cover the whole screen instead. */
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* "dynamic" height: correct on phones, where the address bar comes and goes */
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.94);
+  color: #fff;
+  /* Let our code see horizontal swipes, but keep two-finger pinch zoom working. */
+  touch-action: pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lightbox::backdrop { background: rgba(0, 0, 0, 0.94); }
+
+.lightbox-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Room for the counter at the top, without covering the photo. */
+  padding: 48px 0;
+}
+/* "contain" = as big as possible while showing the whole photo. A portrait
+   photo on a phone held upright fills the height; a landscape one fills the width. */
+.lightbox-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  -webkit-touch-callout: none; /* no "Save Image" pop-up on long press in iOS Safari */
+}
+
+.lightbox-counter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.lightbox-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  text-align: center;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+}
+
+.lightbox-button {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+}
+.lightbox-button:hover { background: rgba(255, 255, 255, 0.25); }
+.lightbox-close { top: 4px; right: 8px; }
+.lightbox-prev,
+.lightbox-next { top: 50%; transform: translateY(-50%); }
+.lightbox-prev { left: 12px; }
+.lightbox-next { right: 12px; }
+
+/* On phones, swiping replaces the arrows, so they stop covering the photo. */
+@media (hover: none) and (pointer: coarse) {
+  .lightbox-prev,
+  .lightbox-next { display: none; }
+}

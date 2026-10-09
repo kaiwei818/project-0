@@ -24,6 +24,18 @@
     <p class="status" id="status">Loading...</p>
   </main>
 
+  <!-- The full-screen viewer. Hidden until a photo is tapped (see js/lightbox.js). -->
+  <dialog class="lightbox" id="lightbox" aria-label="Photo viewer">
+    <div class="lightbox-stage">
+      <img id="lightbox-img" alt="" draggable="false">
+    </div>
+    <p class="lightbox-counter" id="lightbox-counter"></p>
+    <p class="lightbox-caption" id="lightbox-caption" hidden></p>
+    <button type="button" class="lightbox-button lightbox-close" id="lightbox-close" aria-label="Close">×</button>
+    <button type="button" class="lightbox-button lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
+    <button type="button" class="lightbox-button lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>
+  </dialog>
+
   <script src="/js/set.js" type="module"></script>
 </body>
 </html>

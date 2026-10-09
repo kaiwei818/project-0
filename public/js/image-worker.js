@@ -3,14 +3,21 @@
 // freeze the page. The page sends a file in, and this sends two small files back.
 //
 // Output for each photo:
-//   thumb    about 500 px on the long edge, quality 0.75, no watermark
-//   display  about 2000 px on the long edge, quality 0.80, with the watermark
+//   thumb    1200 px on the long edge, quality 0.85, no watermark (used in the grids)
+//   display  3000 px on the long edge, quality 0.90, with the watermark (used in the viewer)
+//
+// Why these numbers: Retina screens have 2 real pixels per point, so a photo shown
+// 470 points wide in the grid needs about 940 pixels to look sharp. 1200 leaves
+// room. 3000 px fills even a large 5K display in the full-screen viewer.
+// To change them, edit the four values below. Only photos uploaded afterwards change.
 //
 // Drawing onto a canvas and saving it creates a brand new file, so ALL of the
 // original's hidden data (EXIF: GPS location, camera serial number) is left behind.
 
-const THUMB_EDGE = 500;
-const DISPLAY_EDGE = 2000;
+const THUMB_EDGE = 1200;
+const THUMB_QUALITY = 0.85;
+const DISPLAY_EDGE = 3000;
+const DISPLAY_QUALITY = 0.9;
 
 self.onmessage = async (event) => {
   const { id, file, watermark } = event.data;
@@ -32,8 +39,8 @@ async function processPhoto(file, watermark) {
     if (watermark) drawWatermark(display, watermark);
 
     const [thumbBlob, displayBlob] = await Promise.all([
-      encode(thumb, 0.75),
-      encode(display, 0.8),
+      encode(thumb, THUMB_QUALITY),
+      encode(display, DISPLAY_QUALITY),
     ]);
     return { thumb: thumbBlob, display: displayBlob, width: display.width, height: display.height };
   } finally {

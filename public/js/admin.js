@@ -45,8 +45,29 @@ function createSetRow(set) {
   const count = document.createElement("span");
   count.className = "muted";
   count.textContent = `${set.photo_count} ${set.photo_count === 1 ? "photo" : "photos"}`;
-  item.append(link, count);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "button-danger";
+  remove.textContent = "Delete";
+  remove.setAttribute("aria-label", `Delete set ${set.title}`);
+  remove.addEventListener("click", () => deleteSet(set, item));
+  item.append(link, count, remove);
   return item;
+}
+
+async function deleteSet(set, row) {
+  const photos = `${set.photo_count} ${set.photo_count === 1 ? "photo" : "photos"}`;
+  // confirm() shows the browser's own OK/Cancel box. Deleting cannot be undone,
+  // so always ask first.
+  if (!confirm(`Delete the set "${set.title}" and its ${photos}?\n\nThis cannot be undone.`)) return;
+
+  const response = await fetch(`/api/admin/sets/${set.id}`, { method: "DELETE" });
+  if (!response.ok) {
+    alert("Could not delete the set. Please try again.");
+    return;
+  }
+  row.remove();
+  loadStats(); // storage went down
 }
 
 document.getElementById("new-set-form").addEventListener("submit", async (event) => {

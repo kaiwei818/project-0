@@ -1,5 +1,7 @@
 // Set page: read the slug from the URL (/sets/<slug>), ask the API for that set,
-// then build the thumbnail grid. Step 7 adds the lightbox viewer.
+// then build the thumbnail grid. Tapping a photo opens the full-screen viewer.
+
+import { createLightbox } from "./lightbox.js";
 
 const grid = document.getElementById("photo-grid");
 const status = document.getElementById("status");
@@ -18,25 +20,43 @@ async function loadSet() {
   document.getElementById("set-title").textContent = set.title;
   document.getElementById("set-description").textContent = set.description;
 
-  for (const photo of set.photos) {
-    grid.append(createThumb(photo));
-  }
+  const lightbox = createLightbox(set.photos);
+  set.photos.forEach((photo, index) => {
+    grid.append(createThumb(photo, index, lightbox));
+  });
   status.remove();
 }
 
-function createThumb(photo) {
+function createThumb(photo, index, lightbox) {
   const item = document.createElement("li");
   // The photo's shape, used by the CSS to reserve exactly the right space.
   item.style.setProperty("--ratio", (photo.width / photo.height).toFixed(4));
+
+  // A <button> (not a plain image) so keyboard users can Tab to it and press Enter.
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "thumb-button";
+  button.setAttribute("aria-label", `View photo ${index + 1}${photo.alt_text ? `: ${photo.alt_text}` : ""}`);
+  button.addEventListener("click", () => lightbox.open(index, button));
+
   const img = document.createElement("img");
   img.src = `/img/${photo.thumb_key}`;
-  img.alt = photo.alt_text;
+  img.alt = ""; // the button's label already describes it
   img.loading = "lazy"; // only download when scrolled near
   img.width = photo.width;
   img.height = photo.height;
-  item.append(img);
+  img.draggable = false;
+
+  button.append(img);
+  item.append(button);
   return item;
 }
+
+// A light deterrent from the spec: no right-click "Save Image" on photos.
+// It only stops casual saving; screenshots and developer tools still work.
+document.addEventListener("contextmenu", (event) => {
+  if (event.target.tagName === "IMG") event.preventDefault();
+});
 
 loadSet().catch((error) => {
   console.error(error);

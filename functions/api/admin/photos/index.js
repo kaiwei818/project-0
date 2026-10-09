@@ -6,7 +6,9 @@
 // The browser did the resizing, so the 25 MB original never arrives here.
 // We still check everything: never trust what a browser sends.
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB per file, from the spec
+// 15 MB per file. A 3000 px photo at quality 0.9 is usually 1 to 4 MB, but Safari
+// saves JPEG (larger than WebP) and very detailed photos can go higher.
+const MAX_BYTES = 15 * 1024 * 1024;
 
 // Every image format starts with a few fixed "magic" bytes. Checking them is
 // more reliable than trusting the file name or the type the browser claims.
@@ -74,7 +76,7 @@ export async function onRequestPost({ request, env }) {
 
 async function checkImage(file, name) {
   if (!(file instanceof File)) return { error: `Missing the ${name} image.` };
-  if (file.size > MAX_BYTES) return { error: `The ${name} image is larger than 5 MB.` };
+  if (file.size > MAX_BYTES) return { error: `The ${name} image is larger than 15 MB.` };
 
   const bytes = await file.arrayBuffer();
   const start = new Uint8Array(bytes, 0, Math.min(12, bytes.byteLength));

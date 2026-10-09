@@ -1,0 +1,29 @@
+# Cloudflare configuration for this project.
+# "wrangler" is Cloudflare's command line tool. It reads this file to know
+# where the website files are and which database and storage bucket to use.
+
+name = "photo-portfolio"
+compatibility_date = "2025-09-01"
+
+# The folder with the files visitors download (HTML, CSS, JS).
+pages_build_output_dir = "public"
+
+# D1 = the database that stores sets, photos, captions, and ordering.
+# The code reaches it as env.DB.
+[[d1_databases]]
+binding = "DB"
+database_name = "portfolio-db"
+# Replace this with the real id after running: npx wrangler d1 create portfolio-db
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# R2 = the storage bucket for the compressed image files.
+# The code reaches it as env.BUCKET.
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "portfolio-images"
+
+# Optional settings that are not secret. Uncomment to use.
+# ALLOWED_HOSTS: extra domain names allowed to show your images (see functions/img/[[key]].js).
+# [vars]
+# ALLOWED_HOSTS = "example.com,www.example.com"

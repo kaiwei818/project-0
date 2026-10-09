@@ -1,0 +1,7 @@
+# Copy of the settings "npm run dev" needs. Do not put real values here.
+# Run "npm run hash-password" to create the real .dev.vars (it is never committed).
+ADMIN_PASSWORD_HASH=pbkdf2:100000:<salt>:<hash>
+SESSION_SECRET=<at least 32 random characters>
+# Optional. Extra domain names allowed to show your images, comma separated.
+# Only needed if the site answers on more than one domain, e.g. "example.com,www.example.com".
+# ALLOWED_HOSTS=

@@ -1,0 +1,666 @@
+/* ---------- Colors ----------
+   Every color lives in a variable, so light and dark mode only swap these. */
+:root {
+  --bg: #fafaf9;
+  --text: #1c1917;
+  --muted: #78716c;
+  --card: #ffffff;
+  --border: #e7e5e4;
+  --focus: #2563eb;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0a09;
+    --text: #f5f5f4;
+    --muted: #a8a29e;
+    --card: #1c1917;
+    --border: #292524;
+    --focus: #60a5fa;
+  }
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+a { color: inherit; }
+
+/* A clear outline for keyboard users, so they always see where they are. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Hidden on screen but still read by screen readers. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.status { color: var(--muted); }
+
+/* ---------- Header ---------- */
+.site-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.site-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+/* ---------- Home: grid of set cards ---------- */
+/* auto-fill + minmax: as many 280 px columns as fit, so it works on any screen. */
+.set-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+.set-card {
+  display: block;
+  text-decoration: none;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.set-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover; /* crop to fill the box instead of stretching */
+}
+.set-card h2 {
+  margin: 12px 16px 0;
+  font-size: 1.1rem;
+}
+/* At most two lines on the card; the set page shows the full text. */
+.set-card-description {
+  margin: 4px 16px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.set-card .count {
+  margin: 0 16px 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ---------- Set page ---------- */
+.back-link {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.set-description {
+  color: var(--muted);
+  max-width: 65ch;
+  white-space: pre-line; /* keep the line breaks you typed */
+}
+
+/* Justified rows: every photo in a row gets the same height, and each keeps
+   its own shape (portrait stays tall, landscape stays wide).
+
+   The shape comes from --ratio (width / height), which set.js copies from the
+   database. Because the space for each photo is decided by that number alone,
+   nothing moves when the images finish loading. (The previous CSS "columns"
+   layout let the browser rebalance the columns as images arrived, which made
+   photos jump between columns while scrolling.)
+
+   How the trick works: each photo starts at a width proportional to its ratio
+   (flex-basis) and grows by the same proportion (flex-grow). Growing every photo
+   in a row by the same factor keeps their heights equal. */
+.photo-grid {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  --row-height: 260px;
+}
+/* An invisible last item that soaks up the leftover space in the final row,
+   so the last few photos are not stretched to fill the whole width. */
+.photo-grid::after {
+  content: "";
+  flex-grow: 1000;
+}
+.photo-grid li {
+  flex-grow: var(--ratio);
+  flex-basis: calc(var(--ratio) * var(--row-height));
+}
+.photo-grid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--ratio);
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--border);
+}
+@media (max-width: 600px) {
+  .photo-grid { --row-height: 160px; }
+}
+
+/* ---------- Admin ---------- */
+.muted { color: var(--muted); }
+
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: wait; }
+.button-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.login {
+  max-width: 360px;
+  padding-top: 15vh;
+}
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.form-error {
+  margin: 0;
+  min-height: 1.5em;
+  color: #dc2626;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.admin-header nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-card {
+  max-width: 480px;
+  padding: 20px 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.stat-card h2 { margin: 0 0 4px; font-size: 1rem; }
+.meter {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.meter-fill {
+  width: 0;
+  height: 100%;
+  background: var(--focus);
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  max-width: 480px;
+}
+.inline-form input { flex: 1; min-width: 0; }
+
+.admin-set-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-width: 480px;
+}
+.admin-set-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Upload page ---------- */
+.panel {
+  margin: 0 0 24px;
+  padding: 20px 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.panel h2 { margin: 0 0 12px; font-size: 1rem; }
+.panel > label:not(.drop-zone) { display: block; margin-bottom: 6px; }
+.panel input[type="text"] { width: 100%; max-width: 360px; }
+.panel > label.checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+input:disabled { opacity: 0.6; }
+
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 40px 16px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+}
+.drop-zone:hover,
+.drop-zone.dragging { border-color: var(--focus); }
+/* The file input itself is hidden, so show its focus ring on the box instead. */
+.drop-zone:has(+ #file-input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+progress { width: 100%; height: 8px; }
+
+.wm-preview { margin: 16px 0; }
+.wm-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  border-radius: 4px;
+}
+
+.actions { display: flex; gap: 8px; margin: 16px 0; }
+
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.queue li { font-size: 0.85rem; }
+.queue img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--border);
+}
+.queue p { margin: 4px 0 0; overflow-wrap: anywhere; }
+.queue-name { font-weight: 600; }
+.queue li[data-status="error"] .queue-status { color: #dc2626; }
+.queue li[data-status="done"] .queue-status { color: #16a34a; }
+
+
+/* ---------- Deleting ---------- */
+.button-danger {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid currentColor;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+.button-danger:hover { background: #dc2626; color: #fff; }
+
+.admin-set-list li { align-items: center; }
+.admin-set-list a { flex: 1; }
+
+
+.danger-zone {
+  margin-top: 48px;
+  padding: 20px 24px;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+}
+.danger-zone h2 { margin: 0 0 4px; font-size: 1rem; color: #dc2626; }
+
+/* ---------- Tappable photos ---------- */
+.thumb-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: zoom-in;
+}
+.thumb-button img { transition: opacity 0.15s; }
+.thumb-button:hover img { opacity: 0.9; }
+
+/* ---------- Full-screen viewer ---------- */
+.no-scroll { overflow: hidden; }
+
+.lightbox {
+  /* <dialog> has a default box; make it cover the whole screen instead. */
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* "dynamic" height: correct on phones, where the address bar comes and goes */
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.94);
+  color: #fff;
+  /* Let our code see horizontal swipes, but keep two-finger pinch zoom working. */
+  touch-action: pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lightbox::backdrop { background: rgba(0, 0, 0, 0.94); }
+
+.lightbox-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Room for the counter at the top, without covering the photo. */
+  padding: 48px 0;
+}
+/* "contain" = as big as possible while showing the whole photo. A portrait
+   photo on a phone held upright fills the height; a landscape one fills the width. */
+.lightbox-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  -webkit-touch-callout: none; /* no "Save Image" pop-up on long press in iOS Safari */
+}
+
+.lightbox-counter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.lightbox-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  text-align: center;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+}
+
+.lightbox-button {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+}
+.lightbox-button:hover { background: rgba(255, 255, 255, 0.25); }
+.lightbox-close { top: 4px; right: 8px; }
+.lightbox-prev,
+.lightbox-next { top: 50%; transform: translateY(-50%); }
+.lightbox-prev { left: 12px; }
+.lightbox-next { right: 12px; }
+
+/* On phones, swiping replaces the arrows, so they stop covering the photo. */
+@media (hover: none) and (pointer: coarse) {
+  .lightbox-prev,
+  .lightbox-next { display: none; }
+}
+
+/* ---------- Managing sets and photos ---------- */
+.small { font-size: 0.85rem; margin: 4px 0 12px; }
+
+textarea {
+  font: inherit;
+  width: 100%;
+  max-width: 560px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+}
+.panel input[type="text"],
+.panel textarea { margin-bottom: 12px; }
+.slug-field { display: flex; align-items: baseline; gap: 4px; max-width: 360px; }
+.slug-field input { flex: 1; min-width: 0; margin-bottom: 0 !important; }
+
+.save-status { font-size: 0.85rem; color: #16a34a; }
+.save-status[data-state="error"] { color: #dc2626; }
+.actions .save-status { align-self: center; }
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 1rem;
+  line-height: 1;
+}
+.icon-button:hover { border-color: var(--text); }
+.icon-button.active { color: #ca8a04; border-color: #ca8a04; }
+.icon-button.danger { color: #dc2626; }
+.icon-button.danger:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
+
+/* ---------- Drag to reorder (see js/sortable.js) ---------- */
+.drag-handle,
+.drag-surface {
+  cursor: grab;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* "none": a finger on the handle drags the item instead of scrolling the page. */
+.drag-handle { touch-action: none; color: var(--muted); font-size: 1.2rem; padding: 4px; }
+
+/* Lets sortable.js read item positions relative to the list. */
+.admin-set-list,
+.photo-editor { position: relative; }
+
+/* The empty slot that shows where the item will land. */
+.drag-slot {
+  outline: 2px dashed var(--focus);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.drag-slot > * { visibility: hidden; }
+
+/* The floating copy that follows the pointer. */
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  display: block !important;
+  list-style: none;
+  pointer-events: none; /* so we can see what is underneath it */
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  background: var(--card);
+  opacity: 0.95;
+}
+.drag-ghost > li { border-bottom: 0 !important; }
+body.is-dragging,
+body.is-dragging * { cursor: grabbing !important; user-select: none; }
+
+.photo-grip {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+.admin-set-list li { gap: 8px; }
+.admin-set-list .muted { margin-right: 8px; }
+
+.photo-editor {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.photo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.photo-card.is-cover { border-color: #ca8a04; }
+.photo-card-image { position: relative; }
+.photo-card-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: grab;
+}
+.cover-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #ca8a04;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.photo-card-field { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; color: var(--muted); }
+.photo-card-field input { font-size: 0.9rem; padding: 6px 8px; }
+.photo-card-tools { display: flex; gap: 6px; }
+.photo-card-tools .danger { margin-left: auto; }
+
+/* ---------- Storage by set ---------- */
+.storage-details { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+.storage-details summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.storage-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; }
+.storage-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  font-size: 0.9rem;
+}
+.storage-list a { overflow-wrap: anywhere; }
+.storage-size { color: var(--muted); white-space: nowrap; }
+.storage-list .meter { grid-column: 1 / -1; height: 6px; }
+
+/* ---------- Footer ---------- */
+.site-footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Drafts ---------- */
+.draft-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.draft-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #92400e;
+}
+.publish-panel .actions { align-items: center; margin-bottom: 0; }
+#set-title[data-state="draft"]::after {
+  content: "Draft";
+  margin-left: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+/* ---------- Not found page ---------- */
+.not-found { text-align: center; padding-top: 10vh; min-height: 50vh; }
+.not-found-code { font-size: 4rem; font-weight: 700; margin: 0; color: var(--border); }
+.not-found h1 { margin-top: 0; }
+.button-link {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+#queue-summary[data-state="error"] { color: #dc2626; font-weight: 600; }

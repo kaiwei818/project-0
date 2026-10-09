@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <!-- Text in data-site="..." elements and the title come from lib/site.js (see functions/_middleware.js). -->
+  <title data-page="Page not found"></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="site-name" href="/" data-site="name"></a>
+  </header>
+
+  <!-- Cloudflare shows this page for any address that does not exist. -->
+  <main class="not-found">
+    <p class="not-found-code">404</p>
+    <h1>Page not found</h1>
+    <p class="muted">This page does not exist, or it has moved.</p>
+    <p><a class="button-link" href="/">See all photo sets</a></p>
+  </main>
+
+  <footer class="site-footer">
+    © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
+  </footer>
+</body>
+</html>

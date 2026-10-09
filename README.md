@@ -4,8 +4,7 @@ Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
 
 - **Public gallery:** a featured hero photo and large cover cards (title, date,
   photo count), sets (albums) of photos, a full-screen viewer with swipe and
-  keyboard controls, camera details, and a slideshow, a "Next set" link, a light /
-  dark switch, category filters, an About page, link
+  keyboard controls and camera details, a light / dark switch, category filters, an About page, link
   previews when you share a page, and images sized for each screen so phones load
   fast. Visitors with a license code you gave them can download clean copies.
 - **Private admin area** at `/admin`: create sets as private drafts, publish,
@@ -29,7 +28,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 8. [Moving to your own domain](docs/lessons/08-custom-domain.md)
 9. [Fixing "Soft 404": pages that arrive complete](docs/lessons/09-server-rendered-pages.md)
 10. [License codes, categories, and the tiled watermark](docs/lessons/10-downloads-categories-watermark.md)
-11. [Hero, cover cards, dark mode, slideshow, and watermark styles](docs/lessons/11-hero-themes-slideshow.md)
+11. [Hero, cover cards, dark mode, and watermark styles](docs/lessons/11-hero-themes-watermark.md)
 
 ---
 
@@ -128,8 +127,8 @@ public/                  Files sent to browsers as they are
   admin/                   Admin pages (protected by functions/admin/_middleware.js)
   about.html               The About page (filled in by functions/about.js)
   js/                      Browser code (image-worker.js shrinks photos, exif.js reads camera
-                           details, images.js picks image sizes, lightbox.js is the viewer
-                           and slideshow, theme.js is the light / dark switch)
+                           details, images.js picks image sizes, lightbox.js is the viewer,
+                           theme.js is the light / dark switch)
   css/style.css            All styling, light and dark mode
   404.html                 The "page not found" page
 functions/               Server code; the file path is the web address

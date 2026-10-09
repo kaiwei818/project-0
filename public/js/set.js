@@ -1,7 +1,7 @@
 // Set page. The server already put the title, description, and photo grid into
 // the page (see functions/sets/[slug].js), so there is nothing to download or
 // build here. This script makes the photos clickable (tapping one opens the
-// full-screen viewer), runs the Slideshow button, and handles license codes.
+// full-screen viewer) and handles license codes.
 
 import { createLightbox } from "./lightbox.js";
 
@@ -69,13 +69,6 @@ for (const button of document.querySelectorAll("#photo-grid .thumb-button")) {
   const remember = () => (photos[index].gridSrc = img.currentSrc);
   if (img.complete) remember();
   else img.addEventListener("load", remember);
-}
-
-// The Slideshow button: opens the viewer at the first photo and starts playing.
-const slideshowButton = document.getElementById("slideshow-button");
-if (photos.length > 1) {
-  slideshowButton.hidden = false;
-  slideshowButton.addEventListener("click", () => lightbox.open(0, slideshowButton, { slideshow: true }));
 }
 
 // A light deterrent from the spec: no right-click "Save Image" on photos.

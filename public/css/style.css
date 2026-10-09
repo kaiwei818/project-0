@@ -909,82 +909,8 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 .theme-toggle[data-showing="dark"] .icon-moon { display: none; }
 .site-nav { align-items: center; }
 
-/* ---------- Set page: slideshow and next set ---------- */
-.set-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-}
-.set-heading h1 { margin-right: auto; }
-.slideshow-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-.slideshow-button:hover { border-color: var(--text); }
-.slideshow-button svg { width: 16px; height: 16px; fill: currentColor; }
-
-.next-set { margin: 56px 0 0; padding-top: 32px; border-top: 1px solid var(--border); }
-.next-set-link {
-  position: relative;
-  display: block;
-  max-width: 560px;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--card);
-  color: #fff;
-  text-decoration: none;
-}
-.next-set-link img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
-.next-set-link:hover img { transform: scale(1.03); }
-.next-set-text {
-  position: absolute;
-  inset: auto 0 0 0;
-  display: flex;
-  flex-direction: column;
-  padding: 40px 20px 16px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
-}
-.next-set-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.75);
-}
-.next-set-title { font-size: 1.3rem; font-weight: 600; }
-.next-set-link:not(:has(img)) { aspect-ratio: auto; border: 1px solid var(--border); color: var(--text); }
-.next-set-link:not(:has(img)) .next-set-text { position: static; background: none; }
-
-/* The play / pause button in the viewer, bottom-left. */
-.lightbox-play {
-  left: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-.lightbox-play svg { width: 22px; height: 22px; fill: currentColor; }
-.lightbox .icon-pause,
-.lightbox.playing .icon-play { display: none; }
-.lightbox.playing .icon-pause { display: block; }
-/* While playing, the arrows step aside so only the photos show. */
-.lightbox.playing .lightbox-prev,
-.lightbox.playing .lightbox-next { opacity: 0; }
-.lightbox.playing .lightbox-prev:focus-visible,
-.lightbox.playing .lightbox-next:focus-visible { opacity: 1; }
-/* A soft fade between photos in a slideshow. */
-.lightbox.playing #lightbox-img { animation: slide-in 0.6s ease; }
-@keyframes slide-in { from { opacity: 0.35; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .lightbox.playing #lightbox-img { animation: none; }
-  .set-card img, .next-set-link img { transition: none; }
+  .set-card img { transition: none; }
 }
 
 /* ---------- Admin: watermark style ---------- */

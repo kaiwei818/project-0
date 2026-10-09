@@ -1,4 +1,6 @@
-// Admin dashboard: storage used, the list of sets, creating sets, and logging out.
+// Admin dashboard: storage used, the list of sets (create, reorder, delete), and logging out.
+
+import { currentIds, makeSortable, moveItem } from "./sortable.js";
 
 async function loadStats() {
   const response = await fetch("/api/admin/stats");
@@ -39,20 +41,66 @@ async function loadSets() {
 
 function createSetRow(set) {
   const item = document.createElement("li");
+  item.dataset.id = set.id;
+
+  // The ⠿ handle is what you grab to drag the row (see sortable.js).
+  const handle = document.createElement("span");
+  handle.className = "drag-handle";
+  handle.textContent = "⠿";
+  handle.draggable = true;
+  handle.title = "Drag to reorder";
+  handle.setAttribute("aria-hidden", "true");
+
   const link = document.createElement("a");
   link.href = `/admin/set?id=${set.id}`;
   link.textContent = set.title;
   const count = document.createElement("span");
   count.className = "muted";
   count.textContent = `${set.photo_count} ${set.photo_count === 1 ? "photo" : "photos"}`;
+
+  const up = iconButton("↑", `Move ${set.title} up`, () => moveSet(item, -1));
+  const down = iconButton("↓", `Move ${set.title} down`, () => moveSet(item, 1));
+
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "button-danger";
   remove.textContent = "Delete";
   remove.setAttribute("aria-label", `Delete set ${set.title}`);
   remove.addEventListener("click", () => deleteSet(set, item));
-  item.append(link, count, remove);
+  item.append(handle, link, count, up, down, remove);
   return item;
+}
+
+function iconButton(text, label, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "icon-button";
+  button.textContent = text;
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function moveSet(item, direction) {
+  if (!moveItem(item, direction)) return;
+  // Keep keyboard focus on the same button, so pressing Enter again keeps moving it.
+  item.querySelector(direction < 0 ? ".icon-button" : ".icon-button + .icon-button").focus();
+  saveSetOrder();
+}
+
+makeSortable(setList, { axis: "y", onChange: saveSetOrder });
+
+// The order on this list is the order on the home page.
+async function saveSetOrder() {
+  const response = await fetch("/api/admin/sets/order", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ set_ids: currentIds(setList) }),
+  });
+  if (!response.ok) {
+    alert("Could not save the new order. The list will reload.");
+    loadSets();
+  }
 }
 
 async function deleteSet(set, row) {

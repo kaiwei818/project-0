@@ -22,3 +22,8 @@ migrations_dir = "migrations"
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "portfolio-images"
+
+# Optional settings that are not secret. Uncomment to use.
+# ALLOWED_HOSTS: extra domain names allowed to show your images (see functions/img/[[key]].js).
+# [vars]
+# ALLOWED_HOSTS = "example.com,www.example.com"

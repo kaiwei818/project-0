@@ -3,6 +3,8 @@
 // for this set. Social sites (iMessage, Facebook, LINE) do not run JavaScript, so
 // the link preview needs these tags already in the HTML the server sends.
 
+import { withSecurityHeaders } from "../../lib/security.js";
+
 export async function onRequestGet({ request, env, params }) {
   const set = await env.DB.prepare(
     `SELECT s.id, s.title, s.description,
@@ -18,7 +20,7 @@ export async function onRequestGet({ request, env, params }) {
   const page = await env.ASSETS.fetch(new URL("/set.html", request.url));
 
   if (!set) {
-    return new Response(page.body, { status: 404, headers: page.headers });
+    return withSecurityHeaders(new Response(page.body, { status: 404, headers: page.headers }));
   }
 
   const origin = new URL(request.url).origin;
@@ -27,12 +29,12 @@ export async function onRequestGet({ request, env, params }) {
 
   // HTMLRewriter edits the HTML as it streams by. setAttribute escapes the
   // values for us, so a title with quotes in it cannot break the page.
-  return new HTMLRewriter()
+  return withSecurityHeaders(new HTMLRewriter()
     .on("title", { element(el) { el.setInnerContent(title); } })
     .on('meta[property="og:title"]', { element(el) { el.setAttribute("content", title); } })
     .on('meta[property="og:description"]', { element(el) { el.setAttribute("content", set.description); } })
     .on('meta[property="og:image"]', { element(el) { el.setAttribute("content", image); } })
-    .transform(page);
+    .transform(page));
 }
 
 // The URL arrives still encoded: "台北夜景" comes in as "%E5%8F%B0...".

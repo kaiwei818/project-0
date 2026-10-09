@@ -1,0 +1,10 @@
+# Security headers for every plain file the site serves.
+# Explained in lib/security.js, which has the same list for pages built by code.
+# Keep the two lists the same.
+/*
+  Content-Security-Policy: default-src 'self'; img-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000

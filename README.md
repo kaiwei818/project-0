@@ -1,44 +1,151 @@
 # Photography Portfolio
 
-A low-cost photography portfolio on Cloudflare's free tier: a public gallery of
-photo sets, plus a private admin area at `/admin` for creating sets and uploading photos.
-The full plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
+A photography portfolio that runs on Cloudflare's free tier:
+
+- **Public gallery:** sets (albums) of photos, a full-screen viewer with swipe and
+  keyboard controls, and link previews when you share a set.
+- **Private admin area** at `/admin`: create, rename, reorder, and delete sets;
+  upload photos (shrunk and watermarked in your browser, so originals never leave
+  your computer); reorder photos, choose covers, and write captions and
+  descriptions; watch your storage use.
+
+The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 
 ## Learning guide
 
-1. [Lesson 1: How the site works, and running it on your Mac](docs/lessons/01-setup-and-gallery.md)
-2. [Lesson 2: The admin login](docs/lessons/02-admin-login.md)
-3. [Lesson 3: Creating sets and uploading photos](docs/lessons/03-uploads.md)
-4. [Lesson 4: Photo viewer, deleting, and sharper photos](docs/lessons/04-viewer-delete-quality.md)
+1. [How the site works, and running it on your Mac](docs/lessons/01-setup-and-gallery.md)
+2. [The admin login](docs/lessons/02-admin-login.md)
+3. [Creating sets and uploading photos](docs/lessons/03-uploads.md)
+4. [Photo viewer, deleting, and sharper photos](docs/lessons/04-viewer-delete-quality.md)
+5. [Managing photos, security, and going live](docs/lessons/05-manage-secure-deploy.md)
 
-## Quick start
+---
+
+## Run it on your computer
+
+You need [Node.js](https://nodejs.org) (the LTS version). Then, in Terminal:
 
 ```
+git clone https://github.com/kaiwei818/project-0.git
+cd project-0
 npm install
-npm run seed:local   # sample sets in a local database (no account needed)
-npm run hash-password  # choose your admin password (saved to .dev.vars)
-npm run dev          # open http://localhost:8788
+npm run db:migrate:local   # create the local database tables
+npm run hash-password      # choose your admin password (saved to .dev.vars)
+npm run dev                # open http://localhost:8788
 ```
 
-## Progress (spec build order)
+Optional: `npm run seed:local` adds three sample sets. **It replaces everything in
+your local database**, so only use it on a fresh setup.
 
-- [x] 1. Scaffold project and Cloudflare Pages config
-- [x] 2. D1 schema and migrations; R2 binding
-- [x] 3. Public API and gallery pages with seed data
-- [x] 4. Admin auth and protected routes
-- [x] 5. Upload flow (client-side resize, compression, watermark)
-- [ ] 6. Set and photo management (delete done; rename, reorder, cover, captions to do)
-- [x] 7. Lightbox and responsive polish
-- [ ] 8. Hotlink protection, caching, security hardening
-- [ ] 9. Final setup and deployment docs
+Local data lives in the hidden `.wrangler` folder. It never touches the live site.
+
+## Put it online (Cloudflare)
+
+Do these once, in this order. Lesson 5 explains each step in detail.
+
+1. Create a free account at https://dash.cloudflare.com/sign-up, then log in from Terminal:
+   ```
+   npx wrangler login
+   ```
+2. Create the database, and copy the `database_id` it prints into `wrangler.toml`:
+   ```
+   npx wrangler d1 create portfolio-db
+   ```
+3. Create the database tables:
+   ```
+   npm run db:migrate:remote
+   ```
+4. Turn on R2 in the Cloudflare dashboard (left menu, **R2 Object Storage**; it asks
+   for a payment method but the first 10 GB are free), then create the bucket:
+   ```
+   npx wrangler r2 bucket create portfolio-images
+   ```
+5. Deploy for the first time. If it asks questions, create the project as
+   `photo-portfolio` with `main` as the production branch:
+   ```
+   npm run deploy
+   ```
+6. Store your admin password hash and session secret on Cloudflare.
+   `npm run hash-password` prints both values; paste each one when asked:
+   ```
+   npx wrangler pages secret put ADMIN_PASSWORD_HASH
+   npx wrangler pages secret put SESSION_SECRET
+   ```
+7. Deploy again so the secrets take effect:
+   ```
+   npm run deploy
+   ```
+
+Your site is at the address the deploy prints, like `https://photo-portfolio.pages.dev`.
+After any code change, run `npm run deploy` again. If a change adds a file to
+`migrations/`, run `npm run db:migrate:remote` first.
+
+## Settings
+
+| Name | Where | Required | What it is |
+|------|-------|----------|------------|
+| `ADMIN_PASSWORD_HASH` | `.dev.vars` locally; `wrangler pages secret put` live | Yes | Your admin password, hashed. Made by `npm run hash-password`. |
+| `SESSION_SECRET` | same | Yes | Random text that signs login cookies. Changing it logs everyone out. |
+| `ALLOWED_HOSTS` | `[vars]` in `wrangler.toml` | No | Extra domain names allowed to show your images, comma separated. Only needed when the site has more than one domain. |
+| `DB` | `wrangler.toml` | Yes | The D1 database (`database_id` from step 2). |
+| `BUCKET` | `wrangler.toml` | Yes | The R2 bucket for images. |
+
+Secrets never go in the code or on GitHub. `.dev.vars` is listed in `.gitignore`.
 
 ## Commands
 
 | Command | What it does |
 |---------|--------------|
-| `npm run dev` | Run the site locally |
-| `npm run seed:local` | Reset local data to the sample sets |
+| `npm run dev` | Run the site locally at http://localhost:8788 |
 | `npm run hash-password` | Set the admin password |
-| `npm run db:migrate:local` | Apply database migrations locally |
-| `npm run db:migrate:remote` | Apply database migrations to Cloudflare |
+| `npm run db:migrate:local` | Apply database changes locally |
+| `npm run db:migrate:remote` | Apply database changes to the live site |
+| `npm run seed:local` | Replace local data with three sample sets |
 | `npm run deploy` | Publish to Cloudflare Pages |
+
+## How it fits together
+
+```
+public/                  Files sent to browsers as they are
+  index.html, set.html     Public pages
+  admin/                   Admin pages (protected by functions/admin/_middleware.js)
+  js/                      Browser code (image-worker.js shrinks photos; lightbox.js is the viewer)
+  css/style.css            All styling, light and dark mode
+  _headers                 Security headers for the files above
+functions/               Server code; the file path is the web address
+  api/sets/                Public data (read only)
+  api/admin/               Admin data; _middleware.js checks the login for all of it
+  img/[[key]].js           Serves images from R2, with hotlink protection
+  sets/[slug].js           Set pages with link-preview tags
+lib/                     Shared server code: login, slugs, ordering, security headers
+migrations/              Database tables, one numbered file per change
+scripts/                 hash-password and seed-local
+```
+
+## API
+
+Public (read only):
+
+- `GET /api/sets`: all sets with cover and photo count
+- `GET /api/sets/:slug`: one set with its photos
+- `GET /img/:key`: an image file (refuses other websites)
+
+Admin (login required; writes must come from this site):
+
+- `POST /api/admin/login`, `POST /api/admin/logout`
+- `GET /api/admin/stats`: storage used
+- `GET /api/admin/sets`, `POST /api/admin/sets`
+- `PATCH /api/admin/sets/order`: order of sets
+- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, cover)
+- `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
+- `POST /api/admin/photos`: upload one photo (thumbnail and display version)
+- `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, delete
+
+## Honest limits
+
+- Nothing on the web can fully stop people from saving images. This site only
+  serves watermarked, resized copies (originals never go online), blocks
+  right-click saving, and stops other websites from embedding your images.
+  Screenshots still work.
+- One admin account. Logging out removes the cookie from that browser; to log out
+  everywhere, run `npm run hash-password` and update both secrets.

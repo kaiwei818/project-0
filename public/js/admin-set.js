@@ -1,4 +1,5 @@
-// Upload page for one set.
+// Admin page for one set: edit its details, upload photos, and manage the
+// photos already in it (order, cover, captions, delete).
 //
 // The journey of each photo:
 //   waiting -> processing (in a Web Worker) -> ready (preview shown)
@@ -7,6 +8,8 @@
 // has a limited number of cores) but would use a lot more memory.
 // Uploads go one at a time, so the photos keep the order you chose them in:
 // the server adds each photo after the last one it received.
+
+import { currentIds, makeSortable, moveItem } from "./sortable.js";
 
 const PARALLEL = 2;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -34,32 +37,187 @@ async function loadSet() {
     return;
   }
   set = await response.json();
-  $("set-title").textContent = set.title;
-  document.title = `${set.title} | Admin`;
-  $("view-link").href = `/sets/${encodeURIComponent(set.slug)}`;
+  showDetails();
   renderExisting();
 }
 
+// ---------- Set details ----------
+
+function showDetails() {
+  $("set-title").textContent = set.title;
+  document.title = `${set.title} | Admin`;
+  $("view-link").href = `/sets/${encodeURIComponent(set.slug)}`;
+  $("details-title").value = set.title;
+  $("details-slug").value = set.slug;
+  $("details-description").value = set.description;
+}
+
+$("details-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const status = $("details-status");
+  const response = await fetch(`/api/admin/sets/${setId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: $("details-title").value,
+      slug: $("details-slug").value,
+      description: $("details-description").value,
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    status.textContent = data.error || "Could not save.";
+    status.dataset.state = "error";
+    return;
+  }
+  Object.assign(set, data);
+  showDetails(); // shows the cleaned-up web address, e.g. "My Trip!" -> "my-trip"
+  flash(status, "Saved");
+});
+
+// Shows a short message like "Saved" next to a field, then fades it.
+function flash(element, text) {
+  element.textContent = text;
+  element.dataset.state = "ok";
+  clearTimeout(element.timer);
+  element.timer = setTimeout(() => (element.textContent = ""), 2000);
+}
+
+// ---------- Photos already in the set ----------
+
+const existing = $("existing");
+makeSortable(existing, { axis: "x", onChange: savePhotoOrder });
+
 function renderExisting() {
-  const list = $("existing");
-  list.replaceChildren(...set.photos.map((photo, index) => {
-    const item = document.createElement("li");
-    const img = document.createElement("img");
-    img.src = `/img/${photo.thumb_key}`;
-    img.alt = photo.alt_text;
-    img.loading = "lazy";
-
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "photo-delete";
-    remove.textContent = "×";
-    remove.setAttribute("aria-label", `Delete photo ${index + 1}`);
-    remove.addEventListener("click", () => deletePhoto(photo));
-
-    item.append(img, remove);
-    return item;
-  }));
+  existing.replaceChildren(...set.photos.map(createPhotoCard));
   $("existing-empty").hidden = set.photos.length > 0;
+  $("existing-help").hidden = set.photos.length === 0;
+}
+
+function createPhotoCard(photo, index) {
+  const item = document.createElement("li");
+  item.className = "photo-card";
+  item.dataset.id = photo.id;
+  const isCover = coverId() === photo.id;
+  if (isCover) item.classList.add("is-cover");
+
+  // The image is the drag handle (images are draggable by default).
+  const figure = document.createElement("div");
+  figure.className = "photo-card-image";
+  const img = document.createElement("img");
+  img.src = `/img/${photo.thumb_key}`;
+  img.alt = "";
+  img.loading = "lazy";
+  img.title = "Drag to reorder";
+  figure.append(img);
+  if (isCover) {
+    const badge = document.createElement("span");
+    badge.className = "cover-badge";
+    badge.textContent = "Cover";
+    figure.append(badge);
+  }
+
+  const caption = textField(photo, "caption", "Caption (shown in the viewer)");
+  const alt = textField(photo, "alt_text", "Description for blind visitors (alt text)");
+
+  const tools = document.createElement("div");
+  tools.className = "photo-card-tools";
+  const number = index + 1;
+  tools.append(
+    toolButton("←", `Move photo ${number} earlier`, () => movePhoto(item, -1, "←")),
+    toolButton("→", `Move photo ${number} later`, () => movePhoto(item, 1, "→")),
+    toolButton(isCover ? "★" : "☆", isCover ? `Photo ${number} is the cover` : `Make photo ${number} the cover`,
+      () => setCover(photo), isCover ? "active" : ""),
+    toolButton("×", `Delete photo ${number}`, () => deletePhoto(photo), "danger"),
+  );
+
+  item.append(figure, caption, alt, tools);
+  return item;
+}
+
+// The cover is the chosen photo, or the first photo when none was chosen.
+function coverId() {
+  return set.cover_photo_id ?? set.photos[0]?.id;
+}
+
+function textField(photo, field, labelText) {
+  const label = document.createElement("label");
+  label.className = "photo-card-field";
+  const span = document.createElement("span");
+  span.textContent = labelText;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = photo[field];
+  input.maxLength = field === "caption" ? 1000 : 500;
+  const status = document.createElement("span");
+  status.className = "save-status";
+  status.setAttribute("role", "status");
+
+  // "change" fires when you leave the box after typing, not on every key.
+  input.addEventListener("change", async () => {
+    const response = await fetch(`/api/admin/photos/${photo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: input.value }),
+    });
+    if (!response.ok) {
+      status.textContent = "Not saved, try again";
+      status.dataset.state = "error";
+      return;
+    }
+    photo[field] = (await response.json())[field];
+    flash(status, "Saved");
+  });
+
+  label.append(span, input, status);
+  return label;
+}
+
+function toolButton(text, label, onClick, variant = "") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `icon-button ${variant}`;
+  button.textContent = text;
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+async function movePhoto(item, direction, arrow) {
+  if (!moveItem(item, direction)) return;
+  await savePhotoOrder();
+  // Redrawing replaced the buttons. Put focus back on the same arrow of the same
+  // photo, so a keyboard user can press Enter again to keep moving it.
+  const card = existing.querySelector(`[data-id="${item.dataset.id}"]`);
+  [...(card?.querySelectorAll(".icon-button") ?? [])].find((b) => b.textContent === arrow)?.focus();
+}
+
+async function savePhotoOrder() {
+  const ids = currentIds(existing);
+  const response = await fetch(`/api/admin/sets/${setId}/reorder`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ photo_ids: ids }),
+  });
+  if (!response.ok) {
+    alert("Could not save the new order. The page will reload the photos.");
+    return loadSet();
+  }
+  set.photos.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  // Redraw so the photo numbers in the labels and the default cover stay right.
+  renderExisting();
+}
+
+async function setCover(photo) {
+  const response = await fetch(`/api/admin/sets/${setId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cover_photo_id: photo.id }),
+  });
+  if (!response.ok) return alert("Could not change the cover. Please try again.");
+  set.cover_photo_id = photo.id;
+  renderExisting();
 }
 
 // ---------- Deleting ----------
@@ -72,6 +230,7 @@ async function deletePhoto(photo) {
     return;
   }
   set.photos = set.photos.filter((p) => p.id !== photo.id);
+  if (set.cover_photo_id === photo.id) set.cover_photo_id = null; // the server did the same
   renderExisting();
 }
 

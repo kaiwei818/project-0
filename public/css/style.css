@@ -113,22 +113,46 @@ a { color: inherit; }
   max-width: 65ch;
 }
 
-/* Masonry style layout using CSS columns: photos keep their own shape. */
+/* Justified rows: every photo in a row gets the same height, and each keeps
+   its own shape (portrait stays tall, landscape stays wide).
+
+   The shape comes from --ratio (width / height), which set.js copies from the
+   database. Because the space for each photo is decided by that number alone,
+   nothing moves when the images finish loading. (The previous CSS "columns"
+   layout let the browser rebalance the columns as images arrived, which made
+   photos jump between columns while scrolling.)
+
+   How the trick works: each photo starts at a width proportional to its ratio
+   (flex-basis) and grows by the same proportion (flex-grow). Growing every photo
+   in a row by the same factor keeps their heights equal. */
 .photo-grid {
   list-style: none;
   margin: 24px 0 0;
   padding: 0;
-  columns: 3 260px;
-  column-gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  --row-height: 260px;
+}
+/* An invisible last item that soaks up the leftover space in the final row,
+   so the last few photos are not stretched to fill the whole width. */
+.photo-grid::after {
+  content: "";
+  flex-grow: 1000;
 }
 .photo-grid li {
-  break-inside: avoid;
-  margin-bottom: 12px;
+  flex-grow: var(--ratio);
+  flex-basis: calc(var(--ratio) * var(--row-height));
 }
 .photo-grid img {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: var(--ratio);
+  object-fit: cover;
   border-radius: 4px;
   background: var(--border);
+}
+@media (max-width: 600px) {
+  .photo-grid { --row-height: 160px; }
 }

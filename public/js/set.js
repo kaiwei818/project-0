@@ -26,11 +26,12 @@ async function loadSet() {
 
 function createThumb(photo) {
   const item = document.createElement("li");
+  // The photo's shape, used by the CSS to reserve exactly the right space.
+  item.style.setProperty("--ratio", (photo.width / photo.height).toFixed(4));
   const img = document.createElement("img");
   img.src = `/img/${photo.thumb_key}`;
   img.alt = photo.alt_text;
   img.loading = "lazy"; // only download when scrolled near
-  // Telling the browser the shape up front stops the page from jumping as images load.
   img.width = photo.width;
   img.height = photo.height;
   item.append(img);

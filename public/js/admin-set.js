@@ -47,6 +47,7 @@ async function loadSet() {
   showDetails();
   renderExisting();
   loadCategories();
+  showHeroChoices();
 }
 
 // ---------- Categories ----------
@@ -70,6 +71,39 @@ async function loadCategories() {
   }));
 }
 
+// ---------- Hero: featured, and seasonal months ----------
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function showHeroChoices() {
+  $("hero-featured").checked = Boolean(set.featured);
+  const chosen = String(set.feature_months || "").split(",").filter(Boolean).map(Number);
+  $("month-boxes").replaceChildren(...MONTHS.map((name, i) => {
+    const label = document.createElement("label");
+    label.className = "checkbox";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.value = i + 1;
+    box.checked = chosen.includes(i + 1);
+    box.addEventListener("change", saveHeroChoices);
+    label.append(box, ` ${name}`);
+    return label;
+  }));
+}
+
+async function saveHeroChoices() {
+  const months = [...$("month-boxes").querySelectorAll("input:checked")].map((box) => Number(box.value));
+  const response = await fetch(`/api/admin/sets/${setId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ featured: $("hero-featured").checked, feature_months: months }),
+  });
+  if (!response.ok) return alert("Could not save the hero choice. Please try again.");
+  Object.assign(set, await response.json());
+  flash($("details-status"), "Saved");
+}
+$("hero-featured").addEventListener("change", saveHeroChoices);
+
 async function saveCategories() {
   const ids = [...$("category-boxes").querySelectorAll("input:checked")].map((box) => Number(box.value));
   const response = await fetch(`/api/admin/sets/${setId}`, {
@@ -91,7 +125,7 @@ function showDetails(sent = null) {
   document.title = baseTitle.replace(/^Set/, set.title);
   $("view-link").href = $("preview-link").href = `/sets/${encodeURIComponent(set.slug)}`;
   showVisibility();
-  for (const [id, field] of [["details-title", "title"], ["details-slug", "slug"], ["details-description", "description"], ["details-date", "shot_date"]]) {
+  for (const [id, field] of [["details-title", "title"], ["details-slug", "slug"], ["details-description", "description"], ["details-date", "shot_date"], ["details-location", "location"]]) {
     if (!sent || $(id).value === sent[field]) $(id).value = set[field];
   }
 }
@@ -103,7 +137,7 @@ $("details-form").addEventListener("submit", (event) => {
 
 // Like captions, the details also save by themselves when you leave a box
 // after changing it, so nothing typed gets lost if you forget the button.
-for (const id of ["details-title", "details-slug", "details-description", "details-date"]) {
+for (const id of ["details-title", "details-slug", "details-description", "details-date", "details-location"]) {
   $(id).addEventListener("change", () => {
     if ($(id).checkValidity()) saveDetails(); // skip an empty title or address
   });
@@ -124,6 +158,7 @@ async function saveDetailsNow() {
     slug: $("details-slug").value,
     description: $("details-description").value,
     shot_date: $("details-date").value,
+    location: $("details-location").value,
   };
   const response = await fetch(`/api/admin/sets/${setId}`, {
     method: "PATCH",

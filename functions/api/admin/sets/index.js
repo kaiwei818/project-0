@@ -11,7 +11,7 @@ export async function onRequestGet(context) {
   const { env } = context;
   await settleScheduled(context); // scheduled sets whose time has come: mark them published
   const { results } = await env.DB.prepare(
-    `SELECT s.id, s.slug, s.title, s.published, s.publish_at, COUNT(p.id) AS photo_count
+    `SELECT s.id, s.slug, s.title, s.published, s.publish_at, s.featured, s.feature_months, COUNT(p.id) AS photo_count
      FROM sets s LEFT JOIN photos p ON p.set_id = s.id
      GROUP BY s.id
      ORDER BY s.sort_order, s.id`

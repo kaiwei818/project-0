@@ -2,8 +2,9 @@
 
 Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
 
-- **Public gallery:** a featured hero photo and large cover cards (title, date,
-  photo count), sets (albums) of photos, a full-screen viewer with swipe and
+- **Public gallery:** a hero photo (first set, latest work, or rotating featured
+  and seasonal sets), large cover cards (title, date, location, photo count),
+  related sets under each set, sets (albums) of photos, a full-screen viewer with swipe and
   keyboard controls and camera details, a light / dark switch, category filters, an About page, link
   previews and share buttons (copy link, LINE, Facebook, X, WhatsApp, email, or
   the phone's share sheet), and grid images sized for each screen. Visitors with a license code you gave them can download clean copies.
@@ -13,7 +14,9 @@ Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
   upload photos (shrunk and watermarked in your browser, full or small style, so originals
   never leave your computer), optionally with a private clean copy for downloads;
   create license codes and categories; get warned about duplicate photos;
-  see an activity log of uploads, deletions, license codes, and downloads; a watermark toolkit that marks full-size
+  see an activity log of uploads, deletions, license codes, and downloads, and a
+  receipt for every licensed download (optionally by email); license checks and
+  downloads are rate limited; a watermark toolkit that marks full-size
   originals on your computer without uploading them; reorder photos, choose covers, and write captions and
   descriptions; watch your storage use, overall and per set.
 
@@ -34,6 +37,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 11. [Hero, cover cards, dark mode, and watermark styles](docs/lessons/11-hero-themes-watermark.md)
 12. [Share buttons, the watermark toolkit, and the storage limit](docs/lessons/12-share-toolkit-storage.md)
 13. [Duplicate warnings, Download all, the activity log, and scheduled publishing](docs/lessons/13-duplicates-downloads-log-schedule.md)
+14. [Hero choices, related sets, rate limits, and download receipts](docs/lessons/14-hero-related-limits-receipts.md)
 
 ---
 
@@ -107,6 +111,8 @@ deploy; every page picks them up.
 | `ADMIN_USERNAME` | `.dev.vars` locally; `wrangler pages secret put` live | Yes | Your admin login name, for example your email. Capital letters do not matter. |
 | `ADMIN_PASSWORD_HASH` | same | Yes | Your admin password, hashed. Made by `npm run hash-password`. |
 | `SESSION_SECRET` | same | Yes | Random text that signs login cookies. Changing it logs everyone out. |
+| `RESEND_API_KEY` | `wrangler pages secret put` | No | Only for download receipt emails (lesson 14): an API key from resend.com. |
+| `RECEIPT_EMAIL` | same | No | Where download receipt emails go (your Resend account's address). |
 | `ALLOWED_HOSTS` | `[vars]` in `wrangler.toml` | No | Extra domain names allowed to show your images, comma separated. Only needed when the site has more than one domain. |
 | `DB` | `wrangler.toml` | Yes | The D1 database (`database_id` from step 2). |
 | `BUCKET` | `wrangler.toml` | Yes | The R2 bucket for images. |
@@ -163,7 +169,7 @@ Public (read only):
 - `GET /about`: the About page
 - `GET /robots.txt`, `GET /sitemap.xml`: for search engines
 - `GET /img/:key`: an image file (refuses other websites and private clean copies)
-- `POST /api/license/check`: is this license code valid for this set
+- `POST /api/license/check`: is this license code valid for this set (rate limited)
 - `GET /api/download/:id?code=...`: download a clean copy with a valid code (counts one download;
   the set page's "Download all" uses this for each photo, then zips them in the browser)
 
@@ -177,6 +183,8 @@ Admin (login required; writes must come from this site):
 - `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
 - `POST /api/admin/photos/duplicates`: which of these files are already on the site
 - `GET /api/admin/activity`: the activity log
+- `GET /api/admin/receipts`: download receipts (`?format=csv` for a spreadsheet)
+- `GET`, `PATCH /api/admin/hero`: how the home page hero is chosen
 - `POST /api/admin/photos`: upload one photo (small, thumb, display, plus an optional private clean copy)
 - `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, remove clean copy, delete
 - `GET`, `POST /api/admin/licenses`; `PATCH`, `DELETE /api/admin/licenses/:id`: license codes

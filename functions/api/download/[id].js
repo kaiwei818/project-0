@@ -3,29 +3,49 @@
 // for that photo's set. Every successful download counts toward the code's limit,
 // and is written to the activity log (refused ones too, for codes that exist).
 // "&all=1" only marks the log line as part of "Download all".
+// Each successful download also gets a receipt (lib/receipts.js).
+// Rate limited (lib/ratelimit.js): 200 files per hour per address, and 300 per
+// hour per code from all addresses together.
 
 import { logActivity, quoted } from "../../../lib/activity.js";
 import { checkCode, codeName } from "../../../lib/license.js";
+import { clientIp, hit, tooMany } from "../../../lib/ratelimit.js";
+import { placeOf, recordReceipt } from "../../../lib/receipts.js";
 import { isPublicSql } from "../../../lib/visibility.js";
 
 export async function onRequestGet(context) {
   const { request, env, params } = context;
   const photo = await env.DB.prepare(
-    `SELECT p.id, p.download_key, p.sort_order, s.id AS set_id, s.slug, s.title
+    `SELECT p.id, p.download_key, p.sort_order, p.original_name, s.id AS set_id, s.slug, s.title
      FROM photos p JOIN sets s ON s.id = p.set_id
      WHERE p.id = ? AND ${isPublicSql()} AND p.download_key IS NOT NULL`
   ).bind(Number(params.id)).first();
   if (!photo) return new Response("This photo cannot be downloaded.", { status: 404 });
 
+  const limit = await hit(context, "download", clientIp(request));
+  if (!limit.ok) return tooMany(limit.retryAfter);
+  if (limit.justReachedLimit) {
+    // Logged once, when the limit is reached, not for every refused request after.
+    await logActivity(context, "rate_limited", "One address reached the hourly download limit", photo.set_id);
+  }
+
   const url = new URL(request.url);
-  const via = url.searchParams.get("all") ? " (Download all)" : "";
+  const viaAll = Boolean(url.searchParams.get("all"));
+  const via = viaAll ? " (Download all)" : "";
   const result = await checkCode(request, env, url.searchParams.get("code"), photo.set_id);
   if (!result.ok) {
     if (result.license) {
       await logActivity(context, "download_refused",
         `Refused ${codeName(result.license)} for photo #${photo.id} in ${quoted(photo.title)}: ${result.error}`, photo.set_id);
     }
-    return new Response(result.error, { status: result.status });
+    const headers = result.retryAfter ? { "Retry-After": String(result.retryAfter) } : {};
+    return new Response(result.error, { status: result.status, headers });
+  }
+
+  const perCode = await hit(context, "download_code", String(result.license.id));
+  if (!perCode.ok) return tooMany(perCode.retryAfter);
+  if (perCode.justReachedLimit) {
+    await logActivity(context, "rate_limited", `${codeName(result.license)} reached its hourly download limit`, photo.set_id);
   }
 
   const file = await env.BUCKET.get(photo.download_key);
@@ -44,8 +64,10 @@ export async function onRequestGet(context) {
     return new Response("This code has no downloads left.", { status: 403 });
   }
   const used = counted.max_downloads === null ? `${counted.downloads} used, no limit` : `${counted.downloads} of ${counted.max_downloads} used`;
+  const place = placeOf(request);
   await logActivity(context, "download",
-    `${codeName(result.license)} downloaded photo #${photo.id} from ${quoted(photo.title)}${via} (${used})`, photo.set_id);
+    `${codeName(result.license)} downloaded photo #${photo.id} from ${quoted(photo.title)}${via} (${used})${place ? `, from ${place}` : ""}`, photo.set_id);
+  await recordReceipt(context, { license: result.license, photo, viaAll });
 
   return new Response(file.body, {
     headers: {

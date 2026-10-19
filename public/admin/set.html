@@ -60,10 +60,19 @@
       <label for="details-date">Date (optional: shown on the home page card as month and year, for example when the photos were taken)</label>
       <input id="details-date" type="date">
       <p class="muted small">Left empty, the card shows the month you created the set.</p>
+      <label for="details-location">Location (optional, for example "Kyoto, Japan": shown under the title, and used for related sets)</label>
+      <input id="details-location" type="text" maxlength="100">
       <fieldset class="category-picker">
         <legend>Categories</legend>
         <div id="category-boxes"></div>
         <p class="muted small" id="category-empty">No categories yet. Add them on the <a href="/admin/">dashboard</a>.</p>
+      </fieldset>
+      <fieldset class="category-picker hero-picker">
+        <legend>Home page hero</legend>
+        <label class="checkbox"><input type="checkbox" id="hero-featured"> Feature this set when the hero rotates</label>
+        <p class="muted small">Only used when the dashboard's hero setting is "Rotate between featured sets".
+          For a seasonal highlight, tick the months it should appear in; none ticked means all year.</p>
+        <div class="month-boxes" id="month-boxes"></div>
       </fieldset>
       <div class="actions">
         <button type="submit">Save details</button>

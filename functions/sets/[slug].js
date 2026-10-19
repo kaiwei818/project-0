@@ -8,7 +8,8 @@
 import { isLoggedIn } from "../../lib/auth.js";
 import { withPageMeta } from "../../lib/meta.js";
 import { decodeSlug, setWithPhotos } from "../../lib/queries.js";
-import { jsonForPage, photoThumbHtml } from "../../lib/render.js";
+import { relatedSets } from "../../lib/related.js";
+import { jsonForPage, photoThumbHtml, relatedCardHtml } from "../../lib/render.js";
 
 export async function onRequestGet({ request, env, params }) {
   const set = await setWithPhotos(env, decodeSlug(params.slug));
@@ -20,7 +21,10 @@ export async function onRequestGet({ request, env, params }) {
   }
 
   const url = new URL(request.url);
-  const page = await env.ASSETS.fetch(new URL("/set.html", url));
+  const [page, related] = await Promise.all([
+    env.ASSETS.fetch(new URL("/set.html", url)),
+    relatedSets(env, set.id),
+  ]);
 
   const filled = new HTMLRewriter()
     .on("#set-title", { element(el) { el.setInnerContent(set.title); } }) // plain text: escaped for us
@@ -30,6 +34,14 @@ export async function onRequestGet({ request, env, params }) {
         else el.remove();
       },
     })
+    .on("#set-location", {
+      element(el) {
+        if (set.location) el.setInnerContent(set.location);
+        else el.remove();
+      },
+    })
+    .on("#related-sets", { element(el) { if (!related.length) el.remove(); } })
+    .on("#related-grid", { element(el) { el.setInnerContent(related.map(relatedCardHtml).join(""), { html: true }); } })
     .on("#photo-grid", { element(el) { el.setInnerContent(set.photos.map(photoThumbHtml).join(""), { html: true }); } })
     .on("#status", {
       element(el) {

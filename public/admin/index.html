@@ -52,6 +52,24 @@
       <ul class="admin-set-list" id="set-list"></ul>
     </section>
 
+    <section class="panel" aria-labelledby="hero-heading">
+      <h2 id="hero-heading">Home page hero</h2>
+      <p class="muted">The big photo at the top of the home page. Choose which set it shows:</p>
+      <fieldset class="wm-style" id="hero-mode">
+        <legend class="visually-hidden">Hero</legend>
+        <label class="checkbox"><input type="radio" name="hero-mode" value="first"> The first set in your Sets list</label>
+        <label class="checkbox"><input type="radio" name="hero-mode" value="latest"> Latest work: the set with the newest date</label>
+        <label class="checkbox"><input type="radio" name="hero-mode" value="rotate"> Rotate between featured sets (tick "Feature this set" on each set's page; add months for seasonal highlights)</label>
+      </fieldset>
+      <fieldset class="wm-style" id="hero-rotate-field">
+        <legend>Change it</legend>
+        <label class="checkbox"><input type="radio" name="hero-rotate" value="visit"> On every visit</label>
+        <label class="checkbox"><input type="radio" name="hero-rotate" value="day"> Once a day</label>
+      </fieldset>
+      <p class="muted small" id="hero-note"></p>
+      <span class="save-status" id="hero-status" role="status"></span>
+    </section>
+
     <section aria-labelledby="categories-heading">
       <h2 id="categories-heading">Categories</h2>
       <p class="muted">Visitors can filter your sets by these on the home page. Pick each set's categories on its page.</p>

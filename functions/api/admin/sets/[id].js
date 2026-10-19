@@ -6,7 +6,7 @@ import { logActivity, quoted } from "../../../../lib/activity.js";
 import { uniqueSlug } from "../../../../lib/slug.js";
 import { settleScheduled } from "../../../../lib/visibility.js";
 
-const RETURNED = "id, slug, title, description, shot_date, cover_photo_id, published, publish_at";
+const RETURNED = "id, slug, title, description, shot_date, location, featured, feature_months, cover_photo_id, published, publish_at";
 
 export async function onRequestGet(context) {
   const { env, params } = context;
@@ -32,6 +32,8 @@ export async function onRequestGet(context) {
 
 // Body: any of {"title", "description", "shot_date" ("YYYY-MM-DD" or ""), "slug", "cover_photo_id", "published",
 // "publish_at" (a future time like "2026-10-25T01:00:00Z" to schedule it, or "" to cancel),
+// "location" ("Kyoto, Japan"), "featured" (true/false: may appear in a rotating hero),
+// "feature_months" ([3, 4, 5]: only those months; [] = all year),
 // "category_ids": [..]}.
 // Fields that are left out stay as they are.
 export async function onRequestPatch(context) {
@@ -55,6 +57,16 @@ export async function onRequestPatch(context) {
     if (changes.shot_date && !/^\d{4}-\d{2}-\d{2}$/.test(changes.shot_date)) {
       return Response.json({ error: "The date must look like 2026-03-15." }, { status: 400 });
     }
+  }
+  if ("location" in body) {
+    changes.location = String(body.location ?? "").trim().slice(0, 100);
+  }
+  if ("featured" in body) {
+    changes.featured = body.featured ? 1 : 0;
+  }
+  if (Array.isArray(body.feature_months)) {
+    const months = [...new Set(body.feature_months.map(Number))].filter((m) => Number.isInteger(m) && m >= 1 && m <= 12);
+    changes.feature_months = months.sort((a, b) => a - b).join(",");
   }
   if ("slug" in body) {
     // Clean it up the same way new slugs are made. If another set already uses

@@ -61,12 +61,15 @@ function formatBytes(bytes) {
 // ---------- Sets ----------
 
 const setList = document.getElementById("set-list");
+let lastSets = []; // for the hero note
 
 async function loadSets() {
   const response = await fetch("/api/admin/sets");
   if (!response.ok) return;
   const sets = await response.json();
+  lastSets = sets;
   setList.replaceChildren(...sets.map(createSetRow));
+  showHeroNote();
 }
 
 function createSetRow(set) {
@@ -94,6 +97,12 @@ function createSetRow(set) {
       badge.textContent = "Draft";
     }
     link.append(" ", badge);
+  }
+  if (set.featured) {
+    const star = document.createElement("span");
+    star.className = "draft-badge featured-badge";
+    star.textContent = set.feature_months ? "Featured (seasonal)" : "Featured";
+    link.append(" ", star);
   }
   const count = document.createElement("span");
   count.className = "muted";
@@ -231,6 +240,48 @@ document.getElementById("logout").addEventListener("click", async () => {
 });
 
 loadSets().catch((error) => console.error(error));
+
+// ---------- Home page hero ----------
+
+const heroRadios = (name) => [...document.querySelectorAll(`input[name="${name}"]`)];
+
+async function loadHero() {
+  const response = await fetch("/api/admin/hero");
+  if (!response.ok) return;
+  const hero = await response.json();
+  for (const r of heroRadios("hero-mode")) r.checked = r.value === hero.hero_mode;
+  for (const r of heroRadios("hero-rotate")) r.checked = r.value === hero.hero_rotate;
+  showHeroNote();
+}
+
+function showHeroNote() {
+  const mode = heroRadios("hero-mode").find((r) => r.checked)?.value;
+  document.getElementById("hero-rotate-field").hidden = mode !== "rotate";
+  const featured = lastSets.filter((s) => s.featured).length;
+  document.getElementById("hero-note").textContent = mode === "rotate"
+    ? featured
+      ? `${featured} featured ${featured === 1 ? "set" : "sets"}. Sets with months ticked only appear in those months, and are preferred then.`
+      : "No set is featured yet: until you feature one, the first set is shown."
+    : "";
+}
+
+for (const radio of [...heroRadios("hero-mode"), ...heroRadios("hero-rotate")]) {
+  radio.addEventListener("change", async () => {
+    const body = { [radio.name.replace("-", "_")]: radio.value };
+    const response = await fetch("/api/admin/hero", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const status = document.getElementById("hero-status");
+    status.textContent = response.ok ? "Saved" : "Could not save.";
+    status.dataset.state = response.ok ? "ok" : "error";
+    setTimeout(() => (status.textContent = ""), 2000);
+    showHeroNote();
+  });
+}
+
+loadHero();
 loadCategories().catch((error) => console.error(error));
 loadStats().catch((error) => {
   console.error(error);

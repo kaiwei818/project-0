@@ -1058,3 +1058,17 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 
 /* ---------- Set page: download all ---------- */
 .license-actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+
+/* ---------- Hero choices, location, related sets ---------- */
+.featured-badge { background: #ede9fe; color: #5b21b6; }
+.month-boxes { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.month-boxes .checkbox { display: inline-flex !important; margin: 0 !important; }
+.set-location { margin: -8px 0 8px; color: var(--muted); font-size: 0.95rem; }
+.related-sets { margin: 56px 0 0; padding-top: 32px; border-top: 1px solid var(--border); }
+.related-sets h2 { margin: 0 0 16px; font-size: 1.2rem; }
+.related-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+.related-grid .set-card h3 { margin: 0; font-size: 1.1rem; line-height: 1.25; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+.related-grid .set-card-text { padding: 36px 16px 14px; }
+#hero-mode .checkbox,
+#hero-rotate-field .checkbox { display: flex; margin-bottom: 6px; }
+section.panel[aria-labelledby="hero-heading"] { max-width: 720px; }

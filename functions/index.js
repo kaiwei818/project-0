@@ -1,12 +1,13 @@
 // GET /
-// Serves public/index.html with the hero (the big featured photo: the cover of
-// your first set) and the set cards already in it, plus link-preview tags
+// Serves public/index.html with the hero (the big featured photo, chosen by
+// lib/hero.js) and the set cards already in it, plus link-preview tags
 // (sharing your home page shows the cover of your first set).
 //
 // The cards are built here on the server, not in the browser, so the very first
 // version of the page has your real content. Google judges pages largely by that
 // first version; an empty "Loading..." page gets marked as a "Soft 404".
 
+import { pickHero } from "../lib/hero.js";
 import { withPageMeta } from "../lib/meta.js";
 import { categoriesInUse, publishedSets } from "../lib/queries.js";
 import { escapeHtml, heroHtml, setCardHtml } from "../lib/render.js";
@@ -28,17 +29,17 @@ export async function onRequestGet({ request, env }) {
       categories.map((c) => button(`/?category=${encodeURIComponent(c.slug)}`, c.name, c === current)).join("")
     : "";
 
-  // The hero: only on the main home page, and only when the first set has a cover.
-  const featured = !category && sets[0]?.cover_thumb_key ? sets[0] : null;
+  // The hero: only on the main home page (lib/hero.js picks the set).
+  const hero = category ? null : await pickHero(env, sets);
 
   const filled = new HTMLRewriter()
     .on("#hero", {
       element(el) {
-        if (featured) el.setInnerContent(heroHtml(featured, SITE.description), { html: true });
+        if (hero) el.setInnerContent(heroHtml(hero.set, SITE.description, hero.label), { html: true });
         else el.remove();
       },
     })
-    .on("#site-tagline", { element(el) { if (featured) el.remove(); } })
+    .on("#site-tagline", { element(el) { if (hero) el.remove(); } })
     .on("#set-grid", { element(el) { el.setInnerContent(sets.map(setCardHtml).join(""), { html: true }); } })
     .on("#category-nav", {
       element(el) {
@@ -58,6 +59,6 @@ export async function onRequestGet({ request, env }) {
   return withPageMeta(filled, {
     title: current ? current.name : "",
     url: current ? `${url.origin}/?category=${encodeURIComponent(current.slug)}` : url.origin + "/",
-    image: sets[0]?.cover_thumb_key ? `${url.origin}/img/${sets[0].cover_thumb_key}` : "",
+    image: (hero?.set || sets[0])?.cover_thumb_key ? `${url.origin}/img/${(hero?.set || sets[0]).cover_thumb_key}` : "",
   });
 }

@@ -45,6 +45,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v8h14v-8"/></svg> Share
       </button>
     </div>
+    <p class="set-location" id="set-location"></p>
     <p class="set-description" id="set-description"></p>
     <!-- functions/sets/[slug].js fills in the title, description, and photos. -->
     <ul class="photo-grid" id="photo-grid"></ul>
@@ -65,6 +66,12 @@
         <button type="button" id="download-all">Download all</button>
         <span class="muted" id="download-all-status" role="status"></span>
       </div>
+    </section>
+
+    <!-- Up to 4 sets with something in common, filled in by functions/sets/[slug].js. -->
+    <section class="related-sets" id="related-sets" aria-labelledby="related-heading">
+      <h2 id="related-heading">Related sets</h2>
+      <ul class="set-grid related-grid" id="related-grid"></ul>
     </section>
 
     <!-- The photo details for the viewer, as data (browsers never run this). -->

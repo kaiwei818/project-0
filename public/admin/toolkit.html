@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title data-page="Toolkit · Admin"></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <header class="site-header admin-header">
+    <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
+    <nav>
+      <a href="/admin/">Dashboard</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" hidden>
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="/admin/">All sets</a>
+    <h1>Watermark toolkit</h1>
+    <p class="muted">
+      Add your watermark to original photos at full size, then save them to your computer.
+      Everything happens in this browser: the photos are <strong>not uploaded or stored online</strong>,
+      and nothing here uses your site's storage. Best on a computer; very large photos may not work on phones.
+    </p>
+
+    <section class="panel" aria-labelledby="tk-settings-heading">
+      <h2 id="tk-settings-heading">Settings</h2>
+      <label for="tk-text">Watermark text</label>
+      <input id="tk-text" type="text" maxlength="80" placeholder="© Your Name">
+      <fieldset class="wm-style">
+        <legend>Style</legend>
+        <label class="checkbox"><input type="radio" name="tk-style" value="full" checked> Full: repeated across the whole photo</label>
+        <label class="checkbox"><input type="radio" name="tk-style" value="small"> Small: one line in the bottom-right corner</label>
+      </fieldset>
+      <fieldset class="wm-style" id="tk-strength-field">
+        <legend>Strength (full style)</legend>
+        <label class="checkbox"><input type="radio" name="tk-strength" value="strong" checked> Strong</label>
+        <label class="checkbox"><input type="radio" name="tk-strength" value="light"> Light</label>
+      </fieldset>
+      <label for="tk-size">Size</label>
+      <select id="tk-size">
+        <option value="0" selected>Original size (same as your file)</option>
+        <option value="6000">Longest side: 6000 px</option>
+        <option value="4000">Longest side: 4000 px</option>
+        <option value="3000">Longest side: 3000 px</option>
+        <option value="2048">Longest side: 2048 px (good for social media)</option>
+      </select>
+      <label for="tk-quality">JPEG quality</label>
+      <select id="tk-quality">
+        <option value="1">100% (largest files)</option>
+        <option value="0.95" selected>95% (looks the same as the original)</option>
+        <option value="0.9">90% (smaller files)</option>
+      </select>
+      <p class="muted small">The result is always a JPEG. Photos smaller than the chosen size are never enlarged.
+        Camera details and location (EXIF) are not copied into the new file.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="tk-add-heading">
+      <h2 id="tk-add-heading">Add photos</h2>
+      <label class="drop-zone" id="tk-drop" for="tk-files">
+        <strong>Drop original photos here</strong> or click to choose
+        <span class="muted">JPEG, PNG, or WebP. They stay on your computer.</span>
+      </label>
+      <input id="tk-files" type="file" accept="image/jpeg,image/png,image/webp" multiple class="visually-hidden">
+    </section>
+
+    <section class="panel" id="tk-results" hidden aria-labelledby="tk-results-heading">
+      <h2 id="tk-results-heading">Watermarked photos</h2>
+      <p id="tk-summary" aria-live="polite"></p>
+      <progress id="tk-progress" value="0" max="1"></progress>
+      <div class="actions">
+        <button type="button" id="tk-zip" disabled>Download all (.zip)</button>
+        <button type="button" id="tk-redo" class="button-secondary">Redo with current settings</button>
+        <button type="button" id="tk-clear" class="button-secondary">Clear list</button>
+      </div>
+      <ul class="queue" id="tk-list"></ul>
+    </section>
+  </main>
+
+  <script src="/js/admin-toolkit.js" type="module"></script>
+</body>
+</html>

@@ -17,6 +17,7 @@
   <link rel="canonical" href="">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
+  <script src="/js/share.js" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -37,7 +38,13 @@
       Draft preview: only you can see this set. Publish it from the admin page.
     </p>
     <a class="back-link" href="/">All sets</a>
-    <h1 id="set-title"></h1>
+    <div class="set-heading">
+      <h1 id="set-title"></h1>
+      <!-- Shares this set (see js/share.js). -->
+      <button type="button" class="share-button" data-share hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v8h14v-8"/></svg> Share
+      </button>
+    </div>
     <p class="set-description" id="set-description"></p>
     <!-- functions/sets/[slug].js fills in the title, description, and photos. -->
     <ul class="photo-grid" id="photo-grid"></ul>

@@ -118,6 +118,10 @@ phone sizes and camera details.
 
 Storage grows a little, about 15 to 20% more per photo; the storage meter shows it.
 
+> **Update (Lesson 12):** to save storage, new uploads no longer get the
+> 2000 px "medium" file; phones load the 3000 px file in the viewer. Older
+> photos keep their medium file and keep using it.
+
 **Honest note about watermarks:** the grid sizes (800 and 1200 px) have no
 watermark, as before, because watermarks on small grid pictures look cluttered.
 That means a fairly sharp 1200 px copy of every photo is visible. If you prefer,

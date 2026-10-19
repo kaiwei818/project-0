@@ -1,39 +1,49 @@
 // Shrinks one photo. This file runs as a "Web Worker": a background thread, so
 // the heavy work (decoding a 25 MB file, resizing 24 million pixels) does not
-// freeze the page. The page sends a file in, and this sends four small files back.
+// freeze the page. The page sends a file in, and this sends three small files back.
 //
 // Output for each photo:
-//   small    800 px on the long edge, quality 0.80  (grids on phones)
-//   thumb   1200 px on the long edge, quality 0.85  (grids on computers)
-//   medium  2000 px on the long edge, quality 0.88  (viewer on phones)
-//   display 3000 px on the long edge, quality 0.90  (viewer on computers)
-// Every one gets the watermark, in the style you picked on the upload page:
-//   full   repeated diagonally across the whole photo (strong on the viewer
-//          sizes, lighter on the grid sizes)
-//   small  one line in the bottom-right corner
+//   small    800 px on the long edge   (grids on phones)
+//   thumb   1200 px on the long edge   (grids on computers, home page cards)
+//   display 3000 px on the long edge   (the full-screen viewer, on every screen)
 //   download 3000 px JPEG, NO watermark, only if you ticked "clean copy"; kept
 //            private and given out only with a license code
-// The browser picks the smallest one that still looks sharp on each screen
-// (see "srcset" in set.js and lightbox.js), so phones download far less.
+// Every public size gets the watermark, in the style you picked:
+//   full   repeated diagonally across the whole photo (strong on the viewer
+//          size, lighter on the grid sizes)
+//   small  one line in the bottom-right corner
 //
-// Why these numbers: Retina screens have 2 to 3 real pixels per point. A phone
-// is about 390 points wide, so it needs about 390 x 3 = 1170 pixels across. An
-// upright photo at 2000 px is 1333 px wide: enough. (At 1600 px it would be only
-// 1067 px wide, and the phone would pick the big 3000 px file instead.)
-// 3000 px fills even a large 5K display.
-// To change them, edit the values below. Only photos uploaded afterwards change.
+// ---------- Storage limit ----------
+// Each size has a maximum file size (maxBytes). The photo is first saved at the
+// normal quality; if the file is too big (very detailed photos, or Safari, which
+// can only save JPEG), it is saved again at the next lower quality, and so on.
+// If even the lowest quality is too big, the display size is made a little
+// smaller (2400 px). Most photos fit at the first try.
+//
+// With these limits one photo uses at most about 2.5 MB online, so a set of 60
+// photos stays under about 150 MB. (A private clean copy, if you keep one, adds
+// about 2 to 4 MB per photo on top.)
+//
+// There is no separate phone-sized viewer file any more: phones load the same
+// 3000 px file as computers. That is slower on phones, but saves storage.
+// To change the limits, edit the values below. Only photos uploaded afterwards change.
 //
 // Drawing onto a canvas and saving it creates a brand new file, so ALL of the
 // original's hidden data (EXIF: GPS location, camera serial number) is left behind.
 // Before that, we read just the camera details we want to show (exif.js).
 
 import { readCameraInfo } from "./exif.js";
+import { drawWatermark } from "./watermark.js";
 
+const MB = 1024 * 1024;
 const SIZES = {
-  small: { edge: 800, quality: 0.8 },
-  thumb: { edge: 1200, quality: 0.85 },
-  medium: { edge: 2000, quality: 0.88 },
-  display: { edge: 3000, quality: 0.9 },
+  small: { edge: 800, qualities: [0.8, 0.72, 0.64], maxBytes: 0.2 * MB, watermark: "light" },
+  thumb: { edge: 1200, qualities: [0.82, 0.74, 0.66], maxBytes: 0.45 * MB, watermark: "light" },
+  display: {
+    edge: 3000, qualities: [0.88, 0.82, 0.76, 0.7], maxBytes: 1.85 * MB, watermark: "strong",
+    // Last resort for photos still too big at the lowest quality:
+    fallback: { edge: 2400, qualities: [0.8, 0.72] },
+  },
 };
 
 self.onmessage = async (event) => {
@@ -62,11 +72,9 @@ async function processPhoto(file, watermark, watermarkStyle, keepClean) {
     // from the 6000 px original every time. All are still clean at this point.
     canvases.display = shrink(original, SIZES.display.edge);
     original.close(); // free the ~100 MB of decoded pixels as early as possible
-    canvases.medium = shrink(canvases.display, SIZES.medium.edge);
-    canvases.thumb = shrink(canvases.medium, SIZES.thumb.edge);
+    canvases.thumb = shrink(canvases.display, SIZES.thumb.edge);
     canvases.small = shrink(canvases.thumb, SIZES.small.edge);
 
-    const { width, height } = canvases.display;
     const blobs = {};
 
     // JPEG for the download: every program can open it. High quality, since
@@ -76,26 +84,49 @@ async function processPhoto(file, watermark, watermarkStyle, keepClean) {
     }
 
     // Now mark every public size.
-    if (watermark && watermarkStyle === "small") {
-      for (const name of Object.keys(SIZES)) drawCornerWatermark(canvases[name], watermark);
-    } else if (watermark) {
-      // Full: strong on the two viewer sizes, lighter on the grid sizes
-      // (still enough to spoil a saved copy).
-      drawTiledWatermark(canvases.display, watermark, "strong");
-      drawTiledWatermark(canvases.medium, watermark, "strong");
-      drawTiledWatermark(canvases.thumb, watermark, "light");
-      drawTiledWatermark(canvases.small, watermark, "light");
+    for (const [name, size] of Object.entries(SIZES)) {
+      drawWatermark(canvases[name], watermark, watermarkStyle, size.watermark);
     }
 
     // One at a time keeps less memory in use than all at once.
-    for (const [name, { quality }] of Object.entries(SIZES)) {
-      blobs[name] = await encode(canvases[name], quality);
+    for (const name of ["small", "thumb"]) {
+      blobs[name] = await encodeWithin(canvases[name], SIZES[name]);
       release(canvases[name]); // done with this size
+    }
+    blobs.display = await encodeWithin(canvases.display, SIZES.display);
+    // The display file may have been made smaller to fit; report its real size.
+    let { width, height } = canvases.display;
+    if (blobs.display.fallback) {
+      ({ width, height } = blobs.display.fallback);
+      blobs.display = blobs.display.blob;
     }
     return { ...blobs, width, height };
   } finally {
     original.close(); // safe to call twice
     Object.values(canvases).forEach(release);
+  }
+}
+
+// Saves the canvas at the first quality whose file fits within maxBytes.
+// For the display size, if nothing fits, also tries the smaller fallback size,
+// and then returns { blob, fallback: { width, height } }.
+async function encodeWithin(canvas, size) {
+  let blob;
+  for (const quality of size.qualities) {
+    blob = await encode(canvas, quality);
+    if (blob.size <= size.maxBytes) return blob;
+  }
+  if (!size.fallback) return blob; // the smallest we tried: still fine to use
+
+  const smaller = shrink(canvas, size.fallback.edge); // the watermark shrinks along with it
+  try {
+    for (const quality of size.fallback.qualities) {
+      blob = await encode(smaller, quality);
+      if (blob.size <= size.maxBytes) break;
+    }
+    return { blob, fallback: { width: smaller.width, height: smaller.height } };
+  } finally {
+    release(smaller);
   }
 }
 
@@ -130,64 +161,6 @@ function draw(source, width, height) {
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(source, 0, 0, width, height);
   return canvas;
-}
-
-// A repeating diagonal pattern of the watermark text over the whole photo,
-// like stock photo sites use. Cropping or retouching one corner does not remove
-// it. White letters with a thin dark outline show on both bright and dark photos.
-const WATERMARK_STYLES = {
-  strong: { fill: "rgba(255, 255, 255, 0.34)", stroke: "rgba(0, 0, 0, 0.22)", size: 0.045 },
-  light: { fill: "rgba(255, 255, 255, 0.2)", stroke: "rgba(0, 0, 0, 0.12)", size: 0.06 },
-};
-
-function drawTiledWatermark(canvas, text, strength) {
-  const style = WATERMARK_STYLES[strength];
-  const ctx = canvas.getContext("2d");
-  const { width, height } = canvas;
-  // Letter size relative to the photo, so every size looks the same.
-  const size = Math.max(10, Math.round(Math.min(width, height) * style.size));
-
-  ctx.save();
-  ctx.font = `500 ${size}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = style.fill;
-  ctx.strokeStyle = style.stroke;
-  ctx.lineWidth = Math.max(1, size * 0.05);
-
-  // Turn the drawing surface 30 degrees around the centre, then fill a grid
-  // big enough to still cover the corners after turning.
-  ctx.translate(width / 2, height / 2);
-  ctx.rotate(-Math.PI / 6);
-  const stepX = ctx.measureText(text).width + size * 3;
-  const stepY = size * 4;
-  const reach = Math.hypot(width, height) / 2 + stepX;
-  for (let row = 0, y = -reach; y <= reach; y += stepY, row++) {
-    const shift = row % 2 ? stepX / 2 : 0; // stagger every other row, like brickwork
-    for (let x = -reach - shift; x <= reach; x += stepX) {
-      ctx.strokeText(text, x, y);
-      ctx.fillText(text, x, y);
-    }
-  }
-  ctx.restore();
-}
-
-// The "small" style: one line of text in the bottom-right corner, sized
-// relative to the photo so it looks the same at every size.
-function drawCornerWatermark(canvas, text) {
-  const ctx = canvas.getContext("2d");
-  const { width, height } = canvas;
-  const size = Math.max(10, Math.round(Math.max(width, height) * 0.018));
-  const margin = Math.round(size * 1.2);
-  ctx.save();
-  ctx.font = `500 ${size}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
-  ctx.textAlign = "right";
-  ctx.textBaseline = "bottom";
-  ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
-  ctx.shadowBlur = size * 0.3;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-  ctx.fillText(text, width - margin, height - margin);
-  ctx.restore();
 }
 
 // WebP is about 30% smaller than JPEG at the same quality. Safari cannot create

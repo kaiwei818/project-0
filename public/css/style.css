@@ -916,3 +916,87 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 /* ---------- Admin: watermark style ---------- */
 .wm-style { border: 0; padding: 0; margin: 0 0 12px; }
 .wm-style legend { margin-bottom: 6px; }
+
+/* ---------- Share buttons and menu (see js/share.js) ---------- */
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.share-button:hover { border-color: var(--text); }
+.share-button svg,
+.share-item svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+/* The round icon-only version in the header, matching the light / dark switch. */
+.share-button-icon {
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--muted);
+}
+.share-button-icon:hover { color: var(--text); }
+
+.set-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.set-heading h1 { margin-right: auto; }
+
+.share-menu {
+  position: absolute;
+  z-index: 50;
+  min-width: 200px;
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+.share-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.share-item:hover,
+.share-item:focus-visible { background: var(--border); outline: none; }
+
+/* ---------- Admin: watermark toolkit ---------- */
+.panel select {
+  display: block;
+  font: inherit;
+  max-width: 360px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+}
+#tk-list .button-link { margin-top: 6px; padding: 6px 14px; font-size: 0.85rem; }

@@ -5,13 +5,14 @@ Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
 - **Public gallery:** a featured hero photo and large cover cards (title, date,
   photo count), sets (albums) of photos, a full-screen viewer with swipe and
   keyboard controls and camera details, a light / dark switch, category filters, an About page, link
-  previews when you share a page, and images sized for each screen so phones load
-  fast. Visitors with a license code you gave them can download clean copies.
+  previews and share buttons (copy link, LINE, Facebook, X, WhatsApp, email, or
+  the phone's share sheet), and grid images sized for each screen. Visitors with a license code you gave them can download clean copies.
 - **Private admin area** at `/admin`: create sets as private drafts, publish,
   rename, reorder, and delete them;
   upload photos (shrunk and watermarked in your browser, full or small style, so originals
   never leave your computer), optionally with a private clean copy for downloads;
-  create license codes and categories; reorder photos, choose covers, and write captions and
+  create license codes and categories; a watermark toolkit that marks full-size
+  originals on your computer without uploading them; reorder photos, choose covers, and write captions and
   descriptions; watch your storage use, overall and per set.
 
 The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
@@ -29,6 +30,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 9. [Fixing "Soft 404": pages that arrive complete](docs/lessons/09-server-rendered-pages.md)
 10. [License codes, categories, and the tiled watermark](docs/lessons/10-downloads-categories-watermark.md)
 11. [Hero, cover cards, dark mode, and watermark styles](docs/lessons/11-hero-themes-watermark.md)
+12. [Share buttons, the watermark toolkit, and the storage limit](docs/lessons/12-share-toolkit-storage.md)
 
 ---
 
@@ -128,7 +130,9 @@ public/                  Files sent to browsers as they are
   about.html               The About page (filled in by functions/about.js)
   js/                      Browser code (image-worker.js shrinks photos, exif.js reads camera
                            details, images.js picks image sizes, lightbox.js is the viewer,
-                           theme.js is the light / dark switch)
+                           theme.js is the light / dark switch, share.js the share buttons,
+                           watermark.js draws watermarks, admin-toolkit.js and
+                           toolkit-worker.js are the toolkit, zip.js packs its downloads)
   css/style.css            All styling, light and dark mode
   404.html                 The "page not found" page
 functions/               Server code; the file path is the web address
@@ -167,7 +171,7 @@ Admin (login required; writes must come from this site):
 - `PATCH /api/admin/sets/order`: order of sets
 - `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, date, cover, published, categories)
 - `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
-- `POST /api/admin/photos`: upload one photo (all sizes, plus an optional private clean copy)
+- `POST /api/admin/photos`: upload one photo (small, thumb, display, plus an optional private clean copy)
 - `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, remove clean copy, delete
 - `GET`, `POST /api/admin/licenses`; `PATCH`, `DELETE /api/admin/licenses/:id`: license codes
 - `GET`, `POST /api/admin/categories`; `DELETE /api/admin/categories/:id`: categories

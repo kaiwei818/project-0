@@ -1,7 +1,8 @@
 // POST /api/admin/photos
 // Receives one already-shrunk photo from the upload page, as a form with:
 //   set_id, width, height, alt_text, camera_info,
-//   small, thumb, medium, display (the four image files)
+//   small, thumb, display (the image files; "medium" is only sent by
+//   upload pages from before the storage limit, and still accepted)
 //   download (optional): the clean copy for licensed downloads, stored under
 //   "private/", which /img/ refuses to serve
 // Saves the files to R2 and adds a row to the photos table.

@@ -532,7 +532,7 @@ async function uploadItem(item) {
   form.append("height", height);
   form.append("alt_text", `Photo from ${set.title}`);
   form.append("camera_info", cameraInfo || "");
-  for (const size of ["small", "thumb", "medium", "display", "download"]) {
+  for (const size of ["small", "thumb", "display", "download"]) {
     const blob = item.result[size];
     if (blob) form.append(size, blob, `${size}.${extension(blob)}`);
   }
@@ -630,9 +630,9 @@ function renderItem(item) {
   status.textContent = item.status === "error" ? item.error : STATUS_TEXT[item.status];
   if (item.thumbUrl && !img.src) img.src = item.thumbUrl;
   if (item.result) {
-    const { small, thumb, medium, display, cameraInfo } = item.result;
-    const online = small.size + thumb.size + medium.size + display.size;
-    sizes.textContent = `${formatBytes(item.file.size)} → ${formatBytes(online)} online (4 sizes)`;
+    const { small, thumb, display, cameraInfo } = item.result;
+    const online = small.size + thumb.size + display.size;
+    sizes.textContent = `${formatBytes(item.file.size)} → ${formatBytes(online)} online (3 sizes)`;
     if (item.result.download) sizes.textContent += ` + ${formatBytes(item.result.download.size)} private clean copy`;
     if (cameraInfo) sizes.textContent += ` · ${cameraInfo}`;
   }
@@ -652,6 +652,13 @@ function renderSummary() {
   else if (uploadStarted) text = `Finished: ${done} uploaded.`;
   else text = `${ready} ${ready === 1 ? "photo" : "photos"} ready. Check the preview, then upload.`;
   if (errors) text += ` ${errors} failed: see the red messages below.`;
+  // Storage these photos will use, so you can keep an eye on the set's size.
+  const shrunk = items.filter((i) => i.result && i.status !== "removed");
+  if (shrunk.length) {
+    const online = shrunk.reduce((sum, i) => sum + i.result.small.size + i.result.thumb.size + i.result.display.size, 0);
+    const clean = shrunk.reduce((sum, i) => sum + (i.result.download?.size || 0), 0);
+    text += ` Storage: ${formatBytes(online)}` + (clean ? ` + ${formatBytes(clean)} clean copies.` : ".");
+  }
   $("queue-summary").textContent = text;
   $("queue-summary").dataset.state = errors ? "error" : "";
   $("retry-button").hidden = !items.some(canRetry) || isBusy();

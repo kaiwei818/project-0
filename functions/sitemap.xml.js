@@ -1,12 +1,14 @@
 // GET /sitemap.xml
 // A list of every public page, in the standard format search engines read.
 // It is built fresh from the database, so new sets appear automatically.
-// Drafts are left out.
+// Drafts (including scheduled sets whose time has not come) are left out.
+
+import { isPublicSql } from "../lib/visibility.js";
 
 export async function onRequestGet({ request, env }) {
   const origin = new URL(request.url).origin;
   const { results: sets } = await env.DB.prepare(
-    `SELECT slug FROM sets WHERE published = 1 ORDER BY sort_order, id`
+    `SELECT slug FROM sets s WHERE ${isPublicSql()} ORDER BY sort_order, id`
   ).all();
 
   const urls = [`${origin}/`, `${origin}/about`, ...sets.map((s) => `${origin}/sets/${encodeURIComponent(s.slug)}`)];

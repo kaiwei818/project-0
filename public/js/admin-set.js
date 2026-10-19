@@ -12,6 +12,7 @@
 // Uploads go one at a time, so the photos keep the order you chose them in:
 // the server adds each photo after the last one it received.
 
+import { readCaptureKey } from "./exif.js";
 import { currentIds, makeSortable, moveItem } from "./sortable.js";
 
 let parallel = 2;
@@ -144,13 +145,59 @@ async function saveDetailsNow() {
 
 function showVisibility() {
   const published = Boolean(set.published);
+  const scheduled = !published && set.publish_at ? new Date(set.publish_at) : null;
   $("publish-text").textContent = published
     ? "Published: everyone can see this set."
-    : "Draft: only you can see this set (use Preview while logged in). Visitors and search engines cannot.";
-  $("publish-button").textContent = published ? "Unpublish (back to draft)" : "Publish";
+    : scheduled
+      ? `Scheduled: this set becomes public on ${formatWhen(scheduled)} (your time). Until then only you can see it.`
+      : "Draft: only you can see this set (use Preview while logged in). Visitors and search engines cannot.";
+  $("publish-button").textContent = published ? "Unpublish (back to draft)" : "Publish now";
   $("publish-button").className = published ? "button-secondary" : "";
-  $("set-title").dataset.state = published ? "published" : "draft";
+  $("set-title").dataset.state = published ? "published" : scheduled ? "scheduled" : "draft";
+
+  $("schedule-form").hidden = published;
+  $("unschedule-button").hidden = !scheduled;
+  $("schedule-button").textContent = scheduled ? "Change time" : "Schedule";
+  $("publish-at").min = toLocalInput(new Date(Date.now() + 60_000));
+  if (scheduled && document.activeElement !== $("publish-at")) $("publish-at").value = toLocalInput(scheduled);
 }
+
+// "Sat, 25 Oct 2026, 09:00" in the computer's own language and time zone.
+function formatWhen(date) {
+  return date.toLocaleString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// A date as the "2026-10-25T09:00" text that <input type="datetime-local"> uses (local time).
+function toLocalInput(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+async function saveSchedule(value) {
+  $("schedule-error").textContent = "";
+  const response = await fetch(`/api/admin/sets/${setId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ publish_at: value }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    $("schedule-error").textContent = data.error || "Could not save the schedule.";
+    return;
+  }
+  Object.assign(set, data);
+  showVisibility();
+}
+
+$("schedule-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  // The box holds local time; new Date() reads it as local, toISOString() turns it into UTC.
+  const when = new Date($("publish-at").value);
+  if (Number.isNaN(when.getTime())) return;
+  if (set.photos.length === 0 && !confirm("This set has no photos yet. Schedule it anyway?")) return;
+  saveSchedule(when.toISOString());
+});
+$("unschedule-button").addEventListener("click", () => saveSchedule(""));
 
 $("publish-button").addEventListener("click", async () => {
   const publish = !set.published;
@@ -426,17 +473,21 @@ function addFiles(fileList) {
   if (!set) return;
   if (uploadStarted && !isBusy()) clearList(); // a finished batch: start fresh
 
+  const added = [];
   for (const file of fileList) {
     const item = { id: nextId++, file, status: "waiting", el: createCard(file) };
     if (!ALLOWED_TYPES.includes(file.type)) {
       item.status = "error";
       item.error = "Not a JPEG, PNG, or WebP file.";
+    } else {
+      added.push(item);
     }
     items.push(item);
     $("queue").append(item.el.root);
     renderItem(item);
   }
   $("queue-panel").hidden = items.length === 0;
+  checkDuplicates(added);
   pumpProcessing();
   renderSummary();
 }
@@ -532,6 +583,10 @@ async function uploadItem(item) {
   form.append("height", height);
   form.append("alt_text", `Photo from ${set.title}`);
   form.append("camera_info", cameraInfo || "");
+  const facts = await item.factsReady; // name, fingerprint, capture time (for duplicate warnings later)
+  form.append("original_name", item.file.name);
+  form.append("original_hash", facts?.hash || "");
+  form.append("taken_at", facts?.takenAt || "");
   for (const size of ["small", "thumb", "display", "download"]) {
     const blob = item.result[size];
     if (blob) form.append(size, blob, `${size}.${extension(blob)}`);
@@ -599,6 +654,128 @@ function clearList() {
   renderSummary();
 }
 
+// ---------- Duplicate warnings ----------
+// Before uploading, each new file is compared with every photo already on the
+// site, by three facts (see functions/api/admin/photos/duplicates.js):
+//   the exact same file     its fingerprint (SHA-256 hash of every byte) matches
+//   the same moment         same capture time and camera, from EXIF (for example,
+//                           the same shot exported twice, or edited)
+//   the same file name      weakest: cameras reuse names after 9999 shots
+// Matches are only warnings: you can skip the photo, or upload it anyway.
+
+const REASON_TEXT = {
+  hash: "The exact same file is already in",
+  moment: "Taken at the same moment, with the same camera, as a photo in",
+  name: "Same file name as a photo in",
+};
+
+async function fileFacts(file) {
+  // crypto.subtle is built into the browser: the file never leaves your computer.
+  const [digest, takenAt] = await Promise.all([
+    crypto.subtle.digest("SHA-256", await file.arrayBuffer()),
+    readCaptureKey(file),
+  ]);
+  const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return { hash, takenAt };
+}
+
+async function checkDuplicates(newItems) {
+  if (!newItems.length) return;
+  // One file at a time: reading many 25 MB files at once would use a lot of memory.
+  let chain = Promise.resolve();
+  for (const item of newItems) {
+    item.factsReady = chain = chain.then(() => fileFacts(item.file)).catch(() => null);
+  }
+  await chain;
+
+  const files = [];
+  for (const item of newItems) {
+    const facts = await item.factsReady;
+    if (facts) files.push({ key: String(item.id), name: item.file.name, hash: facts.hash, taken_at: facts.takenAt });
+  }
+  let matches = {};
+  try {
+    const response = await fetch("/api/admin/photos/duplicates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files }),
+    });
+    if (response.ok) ({ matches } = await response.json());
+  } catch {
+    return; // no warning is better than blocking the upload
+  }
+
+  for (const item of newItems) {
+    if (item.status === "removed" || !items.includes(item)) continue;
+    const notes = (matches[item.id] || []).map((m) => ({
+      reason: m.reasons[0], // the strongest one
+      text: `${REASON_TEXT[m.reasons[0]]} "${m.set_title}"`,
+      href: `/admin/set?id=${m.set_id}`,
+    }));
+    // The same file twice in this list.
+    const facts = await item.factsReady;
+    const twin = facts && items.find((other) => other !== item && other.id < item.id &&
+      other.status !== "removed" && other.factsReady && other.facts?.hash === facts.hash);
+    item.facts = facts;
+    if (twin) notes.unshift({ reason: "hash", text: `The same file is also in this list ("${twin.file.name}")` });
+    item.duplicates = notes;
+    renderWarning(item);
+  }
+  renderSummary();
+}
+
+function renderWarning(item) {
+  const box = item.el.warning;
+  const notes = item.duplicates || [];
+  box.hidden = notes.length === 0 || item.status === "done";
+  if (box.hidden) return;
+  box.dataset.strength = notes.some((n) => n.reason !== "name") ? "strong" : "weak";
+  const list = document.createElement("ul");
+  for (const note of notes.slice(0, 3)) {
+    const li = document.createElement("li");
+    if (note.href) {
+      const link = document.createElement("a");
+      link.href = note.href;
+      link.target = "_blank";
+      link.textContent = note.text;
+      li.append(link);
+    } else {
+      li.textContent = note.text;
+    }
+    list.append(li);
+  }
+  const title = document.createElement("strong");
+  title.textContent = "Possible duplicate";
+  const skip = document.createElement("button");
+  skip.type = "button";
+  skip.className = "button-secondary";
+  skip.textContent = "Skip this photo";
+  skip.addEventListener("click", () => skipItem(item));
+  box.replaceChildren(title, list, skip);
+  // Uploading: too late to skip.
+  skip.hidden = !["waiting", "processing", "ready", "error"].includes(item.status);
+}
+
+// Takes one photo out of the list (before it is uploaded).
+function skipItem(item) {
+  if (item.status === "processing") item.status = "removed"; // the worker's result will be ignored
+  if (!["waiting", "processing", "removed", "ready", "error"].includes(item.status)) return;
+  item.status = "removed";
+  URL.revokeObjectURL(item.thumbUrl);
+  URL.revokeObjectURL(item.displayUrl);
+  items = items.filter((i) => i !== item);
+  item.el.root.remove();
+  $("queue-panel").hidden = items.length === 0;
+  if (!items.some((i) => i.result)) $("wm-preview").hidden = true;
+  renderSummary();
+}
+
+$("skip-duplicates").addEventListener("click", () => {
+  for (const item of items.filter((i) => i.duplicates?.length && i.status !== "uploading" && i.status !== "done")) {
+    skipItem(item);
+  }
+});
+
 // ---------- Drawing the list ----------
 
 function createCard(file) {
@@ -612,8 +789,11 @@ function createCard(file) {
   sizes.className = "muted";
   const status = document.createElement("p");
   status.className = "queue-status";
-  root.append(img, name, sizes, status);
-  return { root, img, sizes, status };
+  const warning = document.createElement("div");
+  warning.className = "queue-warning";
+  warning.hidden = true;
+  root.append(img, name, sizes, status, warning);
+  return { root, img, sizes, status, warning };
 }
 
 const STATUS_TEXT = {
@@ -629,6 +809,7 @@ function renderItem(item) {
   root.dataset.status = item.status;
   status.textContent = item.status === "error" ? item.error : STATUS_TEXT[item.status];
   if (item.thumbUrl && !img.src) img.src = item.thumbUrl;
+  if (item.duplicates) renderWarning(item);
   if (item.result) {
     const { small, thumb, display, cameraInfo } = item.result;
     const online = small.size + thumb.size + display.size;
@@ -659,6 +840,9 @@ function renderSummary() {
     const clean = shrunk.reduce((sum, i) => sum + (i.result.download?.size || 0), 0);
     text += ` Storage: ${formatBytes(online)}` + (clean ? ` + ${formatBytes(clean)} clean copies.` : ".");
   }
+  const duplicates = items.filter((i) => i.duplicates?.length && i.status !== "done" && i.status !== "uploading").length;
+  if (duplicates) text += ` ${duplicates} possible ${duplicates === 1 ? "duplicate" : "duplicates"}: see the yellow notes.`;
+  $("skip-duplicates").hidden = duplicates === 0;
   $("queue-summary").textContent = text;
   $("queue-summary").dataset.state = errors ? "error" : "";
   $("retry-button").hidden = !items.some(canRetry) || isBusy();

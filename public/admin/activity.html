@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title data-page="Activity · Admin"></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+  <header class="site-header admin-header">
+    <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
+    <nav>
+      <a href="/admin/">Dashboard</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" hidden>
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <a class="back-link" href="/admin/">All sets</a>
+    <h1>Activity</h1>
+    <p class="muted">
+      Everything that happened on your site, newest first: uploads, deletions, license codes,
+      downloads, publishing, and logins. Times are in your own time zone. Lines older than a year are removed.
+    </p>
+    <div class="activity-filters" id="filters" role="group" aria-label="Show">
+      <button type="button" data-group="" aria-pressed="true">All</button>
+      <button type="button" data-group="Upload" aria-pressed="false">Uploads</button>
+      <button type="button" data-group="Deletion" aria-pressed="false">Deletions</button>
+      <button type="button" data-group="License" aria-pressed="false">License codes</button>
+      <button type="button" data-group="Download" aria-pressed="false">Downloads</button>
+      <button type="button" data-group="Publishing" aria-pressed="false">Publishing</button>
+      <button type="button" data-group="Set" aria-pressed="false">New sets</button>
+      <button type="button" data-group="Login" aria-pressed="false">Logins</button>
+    </div>
+    <table class="activity-table">
+      <thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Details</th><th scope="col">From</th></tr></thead>
+      <tbody id="lines"></tbody>
+    </table>
+    <p class="status" id="status">Loading...</p>
+    <div class="actions">
+      <button type="button" class="button-secondary" id="more" hidden>Load more</button>
+    </div>
+  </main>
+
+  <script src="/js/admin-activity.js" type="module"></script>
+</body>
+</html>

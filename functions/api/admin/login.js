@@ -2,12 +2,14 @@
 // Checks the username and password and, if both are right, sends back the
 // session cookie.
 
+import { logActivity } from "../../../lib/activity.js";
 import { createSessionCookie, missingSecrets, verifyPassword, verifyUsername } from "../../../lib/auth.js";
 
 const MAX_FAILURES = 5;          // wrong logins allowed...
 const WINDOW_SECONDS = 15 * 60;  // ...per 15 minutes, per IP address
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   const missing = missingSecrets(env);
   if (missing.length > 0) {
     return Response.json(
@@ -48,11 +50,13 @@ export async function onRequestPost({ request, env }) {
       // Housekeeping: forget attempts older than the window.
       env.DB.prepare(`DELETE FROM login_attempts WHERE attempted_at <= ?`).bind(now - WINDOW_SECONDS),
     ]);
+    await logActivity(context, "login_failed", "Wrong username or password");
     // Never say which one was wrong: that would help someone guessing.
     return Response.json({ error: "Wrong username or password." }, { status: 401 });
   }
 
   await env.DB.prepare(`DELETE FROM login_attempts WHERE ip = ?`).bind(ip).run();
+  await logActivity(context, "login", "Logged in");
 
   return Response.json({ ok: true }, {
     headers: { "Set-Cookie": await createSessionCookie(request, env) },

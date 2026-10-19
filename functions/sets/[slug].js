@@ -45,7 +45,15 @@ export async function onRequestGet({ request, env, params }) {
       },
     })
     // Only you can open a draft; remind yourself it is not public yet.
-    .on("#draft-banner", { element(el) { if (!set.published) el.removeAttribute("hidden"); } })
+    .on("#draft-banner", {
+      element(el) {
+        if (set.published) return;
+        el.removeAttribute("hidden");
+        if (set.publish_at) {
+          el.setInnerContent(`Scheduled preview: only you can see this set until ${set.publish_at.replace("T", " ").replace("Z", " UTC")}. It becomes public by itself then.`);
+        }
+      },
+    })
     // The photo details the viewer needs, for set.js. No second request needed.
     .on("#set-data", { element(el) { el.setInnerContent(jsonForPage(set.photos), { html: true }); } })
     .transform(page);

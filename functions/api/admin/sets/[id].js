@@ -2,11 +2,17 @@
 // PATCH  /api/admin/sets/:id   change title, description, date, slug, cover photo, published, or categories
 // DELETE /api/admin/sets/:id   delete the set, its photos, and their files
 
+import { logActivity, quoted } from "../../../../lib/activity.js";
 import { uniqueSlug } from "../../../../lib/slug.js";
+import { settleScheduled } from "../../../../lib/visibility.js";
 
-export async function onRequestGet({ env, params }) {
+const RETURNED = "id, slug, title, description, shot_date, cover_photo_id, published, publish_at";
+
+export async function onRequestGet(context) {
+  const { env, params } = context;
+  await settleScheduled(context); // a scheduled time that has passed: show it as published
   const set = await env.DB.prepare(
-    `SELECT id, slug, title, description, shot_date, cover_photo_id, published FROM sets WHERE id = ?`
+    `SELECT ${RETURNED} FROM sets WHERE id = ?`
   ).bind(Number(params.id)).first();
 
   if (!set) return Response.json({ error: "Set not found" }, { status: 404 });
@@ -25,11 +31,13 @@ export async function onRequestGet({ env, params }) {
 }
 
 // Body: any of {"title", "description", "shot_date" ("YYYY-MM-DD" or ""), "slug", "cover_photo_id", "published",
+// "publish_at" (a future time like "2026-10-25T01:00:00Z" to schedule it, or "" to cancel),
 // "category_ids": [..]}.
 // Fields that are left out stay as they are.
-export async function onRequestPatch({ request, env, params }) {
+export async function onRequestPatch(context) {
+  const { request, env, params } = context;
   const setId = Number(params.id);
-  const set = await env.DB.prepare(`SELECT id FROM sets WHERE id = ?`).bind(setId).first();
+  const set = await env.DB.prepare(`SELECT id, title, published, publish_at FROM sets WHERE id = ?`).bind(setId).first();
   if (!set) return Response.json({ error: "Set not found" }, { status: 404 });
 
   const body = await request.json().catch(() => ({}));
@@ -65,6 +73,20 @@ export async function onRequestPatch({ request, env, params }) {
 
   if ("published" in body) {
     changes.published = body.published ? 1 : 0; // true = everyone sees it, false = draft
+    changes.publish_at = ""; // publishing now, or going back to draft, ends any schedule
+  }
+  if ("publish_at" in body && !("published" in body)) {
+    const text = String(body.publish_at || "");
+    if (text) {
+      const time = Date.parse(text);
+      if (Number.isNaN(time)) return Response.json({ error: "That date and time do not look right." }, { status: 400 });
+      if (time <= Date.now()) return Response.json({ error: "Choose a time in the future, or use Publish now." }, { status: 400 });
+      // Stored in one fixed format (UTC, whole seconds), so the database can compare it as text.
+      changes.publish_at = new Date(time).toISOString().replace(/\.\d{3}Z$/, "Z");
+      changes.published = 0; // stays a draft until then
+    } else {
+      changes.publish_at = "";
+    }
   }
 
   if (Array.isArray(body.category_ids)) {
@@ -88,15 +110,26 @@ export async function onRequestPatch({ request, env, params }) {
   // building the SQL text from them is safe. The values still go through bind().
   const updated = await env.DB.prepare(
     `UPDATE sets SET ${columns.map((c) => `${c} = ?`).join(", ")} WHERE id = ?
-     RETURNING id, slug, title, description, shot_date, cover_photo_id, published`
+     RETURNING ${RETURNED}`
   ).bind(...Object.values(changes), setId).first();
 
+  // Log changes to who can see the set.
+  if ("published" in body && Boolean(changes.published) !== Boolean(set.published)) {
+    await logActivity(context, changes.published ? "publish" : "unpublish",
+      `${changes.published ? "Published" : "Unpublished (back to draft)"} ${quoted(updated.title)}`, setId);
+  } else if ("publish_at" in changes && changes.publish_at !== set.publish_at && !("published" in body)) {
+    await logActivity(context, "schedule", changes.publish_at
+      ? `Scheduled ${quoted(updated.title)} to go public at ${changes.publish_at}`
+      : `Cancelled the schedule for ${quoted(updated.title)}`, setId);
+  }
   return Response.json(updated);
 }
 
 // Deletes the set, every photo row in it, and every image file in storage.
-export async function onRequestDelete({ env, params }) {
+export async function onRequestDelete(context) {
+  const { env, params } = context;
   const setId = Number(params.id);
+  const info = await env.DB.prepare(`SELECT title FROM sets WHERE id = ?`).bind(setId).first();
   const { results: photos } = await env.DB.prepare(
     `SELECT small_key, thumb_key, medium_key, display_key, download_key FROM photos WHERE set_id = ?`
   ).bind(setId).all();
@@ -120,5 +153,7 @@ export async function onRequestDelete({ env, params }) {
     await env.BUCKET.delete(keys.slice(i, i + 1000));
   }
 
+  await logActivity(context, "set_delete",
+    `Deleted the set ${quoted(info?.title)} and its ${photos.length} ${photos.length === 1 ? "photo" : "photos"}`, setId);
   return Response.json({ ok: true, deleted_photos: photos.length });
 }

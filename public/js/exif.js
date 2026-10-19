@@ -17,6 +17,8 @@ const TAGS = {
   fNumber: 0x829d,
   iso: 0x8827,
   focalLength: 0x920a,
+  takenAt: 0x9003,        // DateTimeOriginal: "2025:07:14 10:22:33"
+  takenSubSec: 0x9291,    // SubSecTimeOriginal: "45" (hundredths), for burst shots
 };
 
 // Sony names its cameras with codes ("ILCE-7M4"). These are the marketing names.
@@ -48,6 +50,24 @@ export async function readCameraInfo(file) {
     return facts ? formatCameraInfo(facts) : "";
   } catch {
     return ""; // unusual or damaged EXIF: just show nothing
+  }
+}
+
+// When the photo was taken, with the camera's name, for duplicate warnings:
+//   "2025-07-14 10:22:33.45 | Sony ILCE-7M4"
+// Two photos with the same moment AND the same camera are almost certainly the
+// same shot (for example, one exported twice). "" when the file has no date.
+export async function readCaptureKey(file) {
+  try {
+    const bytes = new DataView(await file.slice(0, 256 * 1024).arrayBuffer());
+    const facts = parseJpegExif(bytes);
+    const match = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}:\d{2}:\d{2})/.exec(facts?.takenAt || "");
+    if (!match) return "";
+    const subSec = /^\d+$/.test(facts.takenSubSec || "") ? `.${facts.takenSubSec}` : "";
+    const camera = [facts.make, facts.model].filter(Boolean).join(" ");
+    return `${match[1]}-${match[2]}-${match[3]} ${match[4]}${subSec}${camera ? ` | ${camera}` : ""}`;
+  } catch {
+    return "";
   }
 }
 
@@ -99,7 +119,7 @@ function parseTiff(view, start) {
   const byTag = (names) => Object.fromEntries(names.map((n) => [TAGS[n], n]));
   readTable(u32(4), byTag(["make", "model", "exifPointer"]));
   if (facts.exifPointer) {
-    readTable(facts.exifPointer, byTag(["exposureTime", "fNumber", "iso", "focalLength"]));
+    readTable(facts.exifPointer, byTag(["exposureTime", "fNumber", "iso", "focalLength", "takenAt", "takenSubSec"]));
   }
   return facts;
 }

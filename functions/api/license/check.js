@@ -3,12 +3,13 @@
 
 import { checkCode, downloadsLeft } from "../../../lib/license.js";
 import { isSameOrigin } from "../../../lib/auth.js";
+import { isPublicSql } from "../../../lib/visibility.js";
 
 export async function onRequestPost({ request, env }) {
   if (!isSameOrigin(request)) return Response.json({ error: "Forbidden" }, { status: 403 });
   const body = await request.json().catch(() => ({}));
 
-  const set = await env.DB.prepare(`SELECT id FROM sets WHERE slug = ? AND published = 1`)
+  const set = await env.DB.prepare(`SELECT id FROM sets s WHERE slug = ? AND ${isPublicSql()}`)
     .bind(String(body.slug || "")).first();
   if (!set) return Response.json({ error: "Set not found." }, { status: 404 });
 

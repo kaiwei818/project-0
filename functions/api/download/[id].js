@@ -1,20 +1,32 @@
 // GET /api/download/:photoId?code=WL-....
 // Sends the clean copy of one photo as a file download, if the code is valid
-// for that photo's set. Every successful download counts toward the code's limit.
+// for that photo's set. Every successful download counts toward the code's limit,
+// and is written to the activity log (refused ones too, for codes that exist).
+// "&all=1" only marks the log line as part of "Download all".
 
-import { checkCode } from "../../../lib/license.js";
+import { logActivity, quoted } from "../../../lib/activity.js";
+import { checkCode, codeName } from "../../../lib/license.js";
+import { isPublicSql } from "../../../lib/visibility.js";
 
-export async function onRequestGet({ request, env, params }) {
+export async function onRequestGet(context) {
+  const { request, env, params } = context;
   const photo = await env.DB.prepare(
-    `SELECT p.id, p.download_key, p.sort_order, s.id AS set_id, s.slug
+    `SELECT p.id, p.download_key, p.sort_order, s.id AS set_id, s.slug, s.title
      FROM photos p JOIN sets s ON s.id = p.set_id
-     WHERE p.id = ? AND s.published = 1 AND p.download_key IS NOT NULL`
+     WHERE p.id = ? AND ${isPublicSql()} AND p.download_key IS NOT NULL`
   ).bind(Number(params.id)).first();
   if (!photo) return new Response("This photo cannot be downloaded.", { status: 404 });
 
-  const code = new URL(request.url).searchParams.get("code");
-  const result = await checkCode(request, env, code, photo.set_id);
-  if (!result.ok) return new Response(result.error, { status: result.status });
+  const url = new URL(request.url);
+  const via = url.searchParams.get("all") ? " (Download all)" : "";
+  const result = await checkCode(request, env, url.searchParams.get("code"), photo.set_id);
+  if (!result.ok) {
+    if (result.license) {
+      await logActivity(context, "download_refused",
+        `Refused ${codeName(result.license)} for photo #${photo.id} in ${quoted(photo.title)}: ${result.error}`, photo.set_id);
+    }
+    return new Response(result.error, { status: result.status });
+  }
 
   const file = await env.BUCKET.get(photo.download_key);
   if (!file) return new Response("File missing. Please contact the photographer.", { status: 404 });
@@ -23,9 +35,17 @@ export async function onRequestGet({ request, env, params }) {
   // same moment cannot both squeeze past the limit.
   const counted = await env.DB.prepare(
     `UPDATE license_codes SET downloads = downloads + 1
-     WHERE id = ? AND (max_downloads IS NULL OR downloads < max_downloads)`
-  ).bind(result.license.id).run();
-  if (counted.meta.changes === 0) return new Response("This code has no downloads left.", { status: 403 });
+     WHERE id = ? AND (max_downloads IS NULL OR downloads < max_downloads)
+     RETURNING downloads, max_downloads`
+  ).bind(result.license.id).first();
+  if (!counted) {
+    await logActivity(context, "download_refused",
+      `Refused ${codeName(result.license)} for photo #${photo.id} in ${quoted(photo.title)}: no downloads left`, photo.set_id);
+    return new Response("This code has no downloads left.", { status: 403 });
+  }
+  const used = counted.max_downloads === null ? `${counted.downloads} used, no limit` : `${counted.downloads} of ${counted.max_downloads} used`;
+  await logActivity(context, "download",
+    `${codeName(result.license)} downloaded photo #${photo.id} from ${quoted(photo.title)}${via} (${used})`, photo.set_id);
 
   return new Response(file.body, {
     headers: {

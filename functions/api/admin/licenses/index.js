@@ -2,7 +2,8 @@
 // POST /api/admin/licenses   body: {"label", "set_ids": [..], "expires_on": "2026-12-31" | "",
 //                                   "max_downloads": 20 | null}  creates a code
 
-import { newCode } from "../../../../lib/license.js";
+import { logActivity, quoted } from "../../../../lib/activity.js";
+import { codeName, newCode } from "../../../../lib/license.js";
 
 export async function onRequestGet({ env }) {
   const { results: codes } = await env.DB.prepare(
@@ -18,14 +19,15 @@ export async function onRequestGet({ env }) {
   return Response.json(codes);
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   const body = await request.json().catch(() => ({}));
   const label = String(body.label || "").trim().slice(0, 100);
   const setIds = [...new Set((Array.isArray(body.set_ids) ? body.set_ids : []).map(Number))].filter(Number.isInteger);
   if (setIds.length === 0) return Response.json({ error: "Choose at least one set." }, { status: 400 });
 
   const { results: existing } = await env.DB.prepare(
-    `SELECT id FROM sets WHERE id IN (${setIds.map(() => "?").join(",")})`
+    `SELECT id, title FROM sets WHERE id IN (${setIds.map(() => "?").join(",")})`
   ).bind(...setIds).all();
   if (existing.length !== setIds.length) return Response.json({ error: "A chosen set no longer exists." }, { status: 400 });
 
@@ -55,6 +57,12 @@ export async function onRequestPost({ request, env }) {
       await env.DB.batch(setIds.map((setId) =>
         env.DB.prepare(`INSERT INTO license_code_sets (code_id, set_id) VALUES (?, ?)`).bind(created.id, setId)
       ));
+      const limits = [
+        expiresAt ? `until ${body.expires_on}` : "",
+        maxDownloads ? `${maxDownloads} downloads` : "",
+      ].filter(Boolean).join(", ");
+      await logActivity(context, "license_create",
+        `Created ${codeName({ code, label })} for ${existing.map((s) => quoted(s.title)).join(", ")}${limits ? ` (${limits})` : ""}`);
       return Response.json(created, { status: 201 });
     } catch (err) {
       if (!String(err.message).includes("UNIQUE")) throw err;

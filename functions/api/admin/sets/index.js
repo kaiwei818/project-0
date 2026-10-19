@@ -3,11 +3,15 @@
 //                        New sets start as drafts, visible only to you.
 // (The login check happens in ../_middleware.js.)
 
+import { logActivity, quoted } from "../../../../lib/activity.js";
 import { uniqueSlug } from "../../../../lib/slug.js";
+import { settleScheduled } from "../../../../lib/visibility.js";
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet(context) {
+  const { env } = context;
+  await settleScheduled(context); // scheduled sets whose time has come: mark them published
   const { results } = await env.DB.prepare(
-    `SELECT s.id, s.slug, s.title, s.published, COUNT(p.id) AS photo_count
+    `SELECT s.id, s.slug, s.title, s.published, s.publish_at, COUNT(p.id) AS photo_count
      FROM sets s LEFT JOIN photos p ON p.set_id = s.id
      GROUP BY s.id
      ORDER BY s.sort_order, s.id`
@@ -15,7 +19,8 @@ export async function onRequestGet({ env }) {
   return Response.json(results);
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   const body = await request.json().catch(() => ({}));
   const title = String(body.title || "").trim().slice(0, 200);
   const description = String(body.description || "").trim().slice(0, 2000);
@@ -31,5 +36,6 @@ export async function onRequestPost({ request, env }) {
      RETURNING id, slug, title, published`
   ).bind(slug, title, description).first();
 
-  return Response.json({ ...set, photo_count: 0 }, { status: 201 });
+  await logActivity(context, "set_create", `Created the set ${quoted(title)}`, set.id);
+  return Response.json({ ...set, publish_at: "", photo_count: 0 }, { status: 201 });
 }

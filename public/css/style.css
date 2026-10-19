@@ -724,6 +724,20 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
   color: #92400e;
 }
 .publish-panel .actions { align-items: center; margin-bottom: 0; }
+.draft-badge.scheduled { background: #dbeafe; color: #1e40af; }
+#set-title[data-state="scheduled"]::after {
+  content: "Scheduled";
+  margin-left: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+.schedule-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.schedule-form label { display: block; margin-bottom: 6px; }
+.schedule-form input[type="datetime-local"] { font: inherit; }
 #set-title[data-state="draft"]::after {
   content: "Draft";
   margin-left: 12px;
@@ -1000,3 +1014,47 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
   color: var(--text);
 }
 #tk-list .button-link { margin-top: 6px; padding: 6px 14px; font-size: 0.85rem; }
+
+/* ---------- Upload page: duplicate warnings ---------- */
+.queue-warning {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 0.8rem;
+}
+.queue-warning[data-strength="weak"] { background: var(--border); color: var(--text); }
+.queue-warning ul { margin: 4px 0 6px; padding-left: 18px; }
+.queue-warning a { color: inherit; }
+.queue-warning button { padding: 4px 10px; font-size: 0.8rem; }
+
+/* ---------- Admin: activity log ---------- */
+.activity-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.activity-filters button { padding: 6px 14px; font-size: 0.9rem; }
+.activity-filters button[aria-pressed="false"] { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.activity-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.activity-table th,
+.activity-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.activity-table th { color: var(--muted); font-weight: 500; }
+.activity-table td:first-child { white-space: nowrap; color: var(--muted); }
+.activity-group {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--border);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.activity-group[data-group="Deletion"] { background: #fee2e2; color: #991b1b; }
+.activity-group[data-group="Download"] { background: #dcfce7; color: #166534; }
+.activity-group[data-group="License"] { background: #ede9fe; color: #5b21b6; }
+.activity-group[data-group="Publishing"] { background: #dbeafe; color: #1e40af; }
+@media (max-width: 600px) {
+  .activity-table thead { display: none; }
+  .activity-table tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .activity-table td { display: block; border: 0; padding: 2px 0; }
+}
+
+/* ---------- Set page: download all ---------- */
+.license-actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }

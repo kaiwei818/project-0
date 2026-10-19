@@ -7,11 +7,13 @@ Winston Chang's photography portfolio. It runs on Cloudflare's free tier:
   keyboard controls and camera details, a light / dark switch, category filters, an About page, link
   previews and share buttons (copy link, LINE, Facebook, X, WhatsApp, email, or
   the phone's share sheet), and grid images sized for each screen. Visitors with a license code you gave them can download clean copies.
-- **Private admin area** at `/admin`: create sets as private drafts, publish,
+- **Private admin area** at `/admin`: create sets as private drafts, publish now or
+  at a scheduled time,
   rename, reorder, and delete them;
   upload photos (shrunk and watermarked in your browser, full or small style, so originals
   never leave your computer), optionally with a private clean copy for downloads;
-  create license codes and categories; a watermark toolkit that marks full-size
+  create license codes and categories; get warned about duplicate photos;
+  see an activity log of uploads, deletions, license codes, and downloads; a watermark toolkit that marks full-size
   originals on your computer without uploading them; reorder photos, choose covers, and write captions and
   descriptions; watch your storage use, overall and per set.
 
@@ -31,6 +33,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 10. [License codes, categories, and the tiled watermark](docs/lessons/10-downloads-categories-watermark.md)
 11. [Hero, cover cards, dark mode, and watermark styles](docs/lessons/11-hero-themes-watermark.md)
 12. [Share buttons, the watermark toolkit, and the storage limit](docs/lessons/12-share-toolkit-storage.md)
+13. [Duplicate warnings, Download all, the activity log, and scheduled publishing](docs/lessons/13-duplicates-downloads-log-schedule.md)
 
 ---
 
@@ -161,7 +164,8 @@ Public (read only):
 - `GET /robots.txt`, `GET /sitemap.xml`: for search engines
 - `GET /img/:key`: an image file (refuses other websites and private clean copies)
 - `POST /api/license/check`: is this license code valid for this set
-- `GET /api/download/:id?code=...`: download a clean copy with a valid code (counts one download)
+- `GET /api/download/:id?code=...`: download a clean copy with a valid code (counts one download;
+  the set page's "Download all" uses this for each photo, then zips them in the browser)
 
 Admin (login required; writes must come from this site):
 
@@ -169,8 +173,10 @@ Admin (login required; writes must come from this site):
 - `GET /api/admin/stats`: storage used, in total and per set
 - `GET /api/admin/sets`, `POST /api/admin/sets`
 - `PATCH /api/admin/sets/order`: order of sets
-- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, date, cover, published, categories)
+- `GET`, `PATCH`, `DELETE /api/admin/sets/:id`: one set (title, slug, description, date, cover, published, scheduled time, categories)
 - `PATCH /api/admin/sets/:id/reorder`: order of photos in a set
+- `POST /api/admin/photos/duplicates`: which of these files are already on the site
+- `GET /api/admin/activity`: the activity log
 - `POST /api/admin/photos`: upload one photo (small, thumb, display, plus an optional private clean copy)
 - `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, remove clean copy, delete
 - `GET`, `POST /api/admin/licenses`; `PATCH`, `DELETE /api/admin/licenses/:id`: license codes

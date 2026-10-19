@@ -60,6 +60,11 @@
         <button type="submit">Unlock</button>
       </form>
       <p class="form-error" id="license-error" role="alert"></p>
+      <!-- Shown after a code is accepted: every downloadable photo in one .zip file. -->
+      <div class="license-actions-row" id="download-all-row" hidden>
+        <button type="button" id="download-all">Download all</button>
+        <span class="muted" id="download-all-status" role="status"></span>
+      </div>
     </section>
 
     <!-- The photo details for the viewer, as data (browsers never run this). -->

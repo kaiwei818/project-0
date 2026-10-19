@@ -2,17 +2,33 @@
 //                                or {"remove_download": true} to delete the clean copy
 // DELETE /api/admin/photos/:id   deletes the row and all of its image files
 
-export async function onRequestPatch({ request, env, params }) {
+import { logActivity, quoted } from "../../../../lib/activity.js";
+
+// The photo with its set's title, for the activity log.
+function findPhoto(env, id) {
+  return env.DB.prepare(
+    `SELECT p.id, p.set_id, p.original_name, p.small_key, p.thumb_key, p.medium_key, p.display_key,
+            p.download_key, s.title AS set_title
+     FROM photos p JOIN sets s ON s.id = p.set_id WHERE p.id = ?`
+  ).bind(id).first();
+}
+
+function describe(photo) {
+  return `photo #${photo.id}${photo.original_name ? ` (${photo.original_name})` : ""} in ${quoted(photo.set_title)}`;
+}
+
+export async function onRequestPatch(context) {
+  const { request, env, params } = context;
   const body = await request.json().catch(() => ({}));
 
   if (body.remove_download) {
-    const photo = await env.DB.prepare(`SELECT download_key FROM photos WHERE id = ?`)
-      .bind(Number(params.id)).first();
+    const photo = await findPhoto(env, Number(params.id));
     if (!photo) return Response.json({ error: "Photo not found" }, { status: 404 });
     if (photo.download_key) {
       // Database first, then the file (same reasoning as deleting a photo).
       await env.DB.prepare(`UPDATE photos SET download_key = NULL WHERE id = ?`).bind(Number(params.id)).run();
       await env.BUCKET.delete(photo.download_key);
+      await logActivity(context, "clean_copy_remove", `Removed the clean copy of ${describe(photo)}`, photo.set_id);
     }
     return Response.json({ ok: true });
   }
@@ -37,10 +53,9 @@ export async function onRequestPatch({ request, env, params }) {
   return Response.json(updated);
 }
 
-export async function onRequestDelete({ env, params }) {
-  const photo = await env.DB.prepare(
-    `SELECT id, small_key, thumb_key, medium_key, display_key, download_key FROM photos WHERE id = ?`
-  ).bind(Number(params.id)).first();
+export async function onRequestDelete(context) {
+  const { env, params } = context;
+  const photo = await findPhoto(env, Number(params.id));
 
   if (!photo) return Response.json({ error: "Photo not found" }, { status: 404 });
 
@@ -51,6 +66,7 @@ export async function onRequestDelete({ env, params }) {
   ]);
   // Older photos have no small/medium version (null): leave those out.
   await env.BUCKET.delete([photo.small_key, photo.thumb_key, photo.medium_key, photo.display_key, photo.download_key].filter(Boolean));
+  await logActivity(context, "photo_delete", `Deleted ${describe(photo)}`, photo.set_id);
 
   return Response.json({ ok: true });
 }

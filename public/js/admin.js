@@ -86,7 +86,13 @@ function createSetRow(set) {
   if (!set.published) {
     const badge = document.createElement("span");
     badge.className = "draft-badge";
-    badge.textContent = "Draft";
+    if (set.publish_at) {
+      const when = new Date(set.publish_at);
+      badge.classList.add("scheduled");
+      badge.textContent = `Scheduled ${when.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+    } else {
+      badge.textContent = "Draft";
+    }
     link.append(" ", badge);
   }
   const count = document.createElement("span");

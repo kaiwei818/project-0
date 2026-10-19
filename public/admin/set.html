@@ -32,6 +32,16 @@
         <button type="button" id="publish-button"></button>
         <a id="preview-link" href="/" target="_blank">Preview</a>
       </div>
+      <!-- Scheduled publishing: shown while the set is a draft. -->
+      <form class="schedule-form" id="schedule-form">
+        <label for="publish-at">Or make it public automatically at (your local time):</label>
+        <div class="actions">
+          <input id="publish-at" type="datetime-local" required>
+          <button type="submit" class="button-secondary" id="schedule-button">Schedule</button>
+          <button type="button" class="button-secondary" id="unschedule-button" hidden>Cancel schedule</button>
+        </div>
+        <p class="form-error" id="schedule-error" role="alert"></p>
+      </form>
     </section>
 
     <!-- Set details: title, web address, description -->
@@ -104,6 +114,7 @@
       <div class="actions">
         <button type="button" id="upload-button" disabled>Upload</button>
         <button type="button" id="retry-button" class="button-secondary" hidden>Retry failed</button>
+        <button type="button" id="skip-duplicates" class="button-secondary" hidden>Skip all possible duplicates</button>
         <button type="button" id="clear-button" class="button-secondary">Clear list</button>
       </div>
       <ul class="queue" id="queue"></ul>

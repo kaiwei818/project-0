@@ -55,8 +55,9 @@ everyone to `https://winstonlens.com`:
    **Redirect Rules**, and click **Create rule**.
 2. Choose the template **Redirect from WWW to root**, and save.
 
-For `winstonlens.pages.dev` you can leave it, or ask me to add a small redirect in
-the code so visitors there are moved to the new domain automatically.
+> **Update (Lesson 15):** the code now redirects both `www.` and
+> `winstonlens.pages.dev` to the main domain by itself (see `lib/site.js`), so this
+> rule is optional.
 
 ## Step 6: Update your links
 

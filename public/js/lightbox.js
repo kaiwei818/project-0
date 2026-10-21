@@ -20,7 +20,6 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   const caption = document.getElementById("lightbox-caption");
   const camera = document.getElementById("lightbox-camera");
   const counter = document.getElementById("lightbox-counter");
-  const status = document.getElementById("lightbox-status");
   const download = document.getElementById("lightbox-download");
   const prevButton = document.getElementById("lightbox-prev");
   const nextButton = document.getElementById("lightbox-next");
@@ -47,8 +46,6 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     camera.hidden = !photo.camera_info;
     info.hidden = caption.hidden && camera.hidden;
     counter.textContent = `${index + 1} / ${photos.length}`;
-    // Screen readers hear "Photo 2 of 12. Sunset over the harbour." instead of "2 slash 12".
-    status.textContent = `Photo ${index + 1} of ${photos.length}.${photo.alt_text ? ` ${photo.alt_text}.` : ""}${photo.caption ? ` ${photo.caption}` : ""}`;
     const href = downloadUrl(photo);
     download.hidden = !href;
     if (href) download.href = href;

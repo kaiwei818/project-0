@@ -4,6 +4,7 @@
 // visitors see everything at once, with no loading step.
 
 import { withPageMeta } from "../lib/meta.js";
+import { contactItems, externalAttrs } from "../lib/contact.js";
 import { ABOUT_KEYS, getSettings } from "../lib/settings.js";
 
 export async function onRequestGet({ request, env }) {
@@ -18,17 +19,7 @@ export async function onRequestGet({ request, env }) {
         `<p>${escapeHtml(paragraph.trim()).replace(/\n/g, "<br>")}</p>`).join("")
     : `<p class="muted">More about me is coming soon.</p>`;
 
-  const contact = [];
-  if (about.about_email) {
-    contact.push(link(`mailto:${about.about_email}`, "Email", about.about_email));
-  }
-  if (about.about_instagram) {
-    contact.push(link(`https://www.instagram.com/${about.about_instagram}/`, "Instagram", `@${about.about_instagram}`));
-  }
-  if (about.about_link_url) {
-    const shown = about.about_link_url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
-    contact.push(link(about.about_link_url, about.about_link_label || "Website", shown));
-  }
+  const contact = contactItems(about).map((item) => link(item.href, item.label, item.shown));
 
   const portrait = about.about_portrait_key ? portraitHtml(about) : "";
 
@@ -54,9 +45,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 function link(href, label, shown) {
-  // Links to other sites open in a new tab; "noopener" stops that tab from
-  // being able to control this one.
-  const external = href.startsWith("http") ? ' target="_blank" rel="noopener"' : "";
+  const external = externalAttrs(href);
   return `<li><span class="contact-label">${escapeHtml(label)}</span>` +
     `<a href="${escapeHtml(href)}"${external}>${escapeHtml(shown)}</a></li>`;
 }

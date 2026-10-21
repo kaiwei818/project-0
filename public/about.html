@@ -17,24 +17,21 @@
   <link rel="canonical" href="">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
+  <script src="/js/menu.js" defer></script>
   <script src="/js/share.js" defer></script>
   <script src="/js/protect.js" defer></script>
 </head>
 <body>
-  <header class="site-header">
+  <header class="site-header" id="top">
     <a class="site-name" href="/" data-site="name"></a>
-    <nav class="site-nav" aria-label="Main">
-      <a href="/">Work</a>
-      <a href="/about" aria-current="page">About</a>
-      <button type="button" class="share-button share-button-icon" data-share hidden aria-label="Share this page" title="Share">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v8h14v-8"/></svg>
-      </button>
-      <button type="button" class="theme-toggle" id="theme-toggle" hidden>
-        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
-      </button>
-    </nav>
+    <button type="button" class="menu-button" id="menu-button" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      <span class="menu-button-label">Menu</span>
+    </button>
   </header>
+  <!-- The slide-in menu, filled in by functions/_middleware.js (lib/chrome.js)
+       and opened by js/menu.js. -->
+  <dialog class="site-menu" id="site-menu" aria-label="Menu"></dialog>
 
   <!-- functions/about.js fills in the portrait, bio, and contact details
        from what you saved in the admin area. -->
@@ -48,7 +45,7 @@
     </div>
   </main>
 
-  <footer class="site-footer">
+  <footer class="site-footer" id="contact">
     © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
   </footer>
 </body>

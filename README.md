@@ -39,6 +39,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 13. [Duplicate warnings, Download all, the activity log, and scheduled publishing](docs/lessons/13-duplicates-downloads-log-schedule.md)
 14. [Hero choices, related sets, rate limits, and download receipts](docs/lessons/14-hero-related-limits-receipts.md)
 15. [Getting winstonlens.com into Google](docs/lessons/15-google-after-new-domain.md)
+16. [The menu, contact on every page, and smooth page changes](docs/lessons/16-menu-footer-smooth.md)
 
 ---
 

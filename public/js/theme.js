@@ -32,8 +32,14 @@
 
   function updateButton(button) {
     const next = current() === "dark" ? "light" : "dark";
-    button.setAttribute("aria-label", `Switch to ${next} mode`);
-    button.title = `Switch to ${next} mode`;
+    const label = button.querySelector(".theme-label");
+    if (label) {
+      // The menu's button has visible text, which screen readers read too.
+      label.textContent = `${next === "dark" ? "Dark" : "Light"} mode`;
+    } else {
+      button.setAttribute("aria-label", `Switch to ${next} mode`);
+      button.title = `Switch to ${next} mode`;
+    }
     button.dataset.showing = current();
   }
 

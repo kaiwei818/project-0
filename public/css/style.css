@@ -11,8 +11,6 @@
   --card: #ffffff;
   --border: #e7e5e4;
   --focus: #2563eb;
-  --text-soft: #44403c;   /* descriptions and long text: softer than --text, still easy to read */
-  --shadow: 0 10px 30px rgba(28, 25, 23, 0.12);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -23,8 +21,6 @@
     --card: #1c1917;
     --border: #292524;
     --focus: #60a5fa;
-    --text-soft: #d6d3d1;
-    --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
 }
 :root[data-theme="dark"] {
@@ -35,12 +31,6 @@
   --card: #1c1917;
   --border: #292524;
   --focus: #60a5fa;
-  --text-soft: #d6d3d1;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-/* Visitors who ask their device for more contrast get stronger greys and borders. */
-@media (prefers-contrast: more) {
-  :root { --muted: var(--text); --text-soft: var(--text); --border: var(--muted); }
 }
 
 /* ---------- Base ---------- */
@@ -52,34 +42,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
 }
-
-h1, h2, h3 { line-height: 1.2; letter-spacing: -0.015em; }
-h1 { font-size: clamp(1.9rem, 1.4rem + 2vw, 2.75rem); font-weight: 700; }
-
-::selection { background: var(--focus); color: #fff; }
-
-/* "Skip to content": invisible until a keyboard user presses Tab, then it
-   appears at the top so they can jump past the header. */
-.skip-link {
-  position: absolute;
-  left: 16px;
-  top: -100px;
-  z-index: 100;
-  padding: 10px 16px;
-  border-radius: 6px;
-  background: var(--text);
-  color: var(--bg);
-  font-weight: 600;
-  text-decoration: none;
-}
-.skip-link:focus { top: 12px; }
-/* The skip link moves focus to <main>; no outline box around the whole page. */
-main:focus { outline: none; }
 
 main {
   max-width: 1200px;
@@ -92,8 +57,7 @@ a { color: inherit; }
 /* A clear outline for keyboard users, so they always see where they are. */
 :focus-visible {
   outline: 3px solid var(--focus);
-  outline-offset: 3px;
-  border-radius: 4px;
+  outline-offset: 2px;
 }
 
 /* Hidden on screen but still read by screen readers. */
@@ -115,9 +79,9 @@ a { color: inherit; }
   padding: 24px 16px;
 }
 .site-name {
-  font-size: 1.2rem;
-  font-weight: 650;
-  letter-spacing: 0.06em;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-decoration: none;
 }
 
@@ -139,12 +103,10 @@ a { color: inherit; }
   text-decoration: none;
   color: #fff;
   background: var(--card);
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   aspect-ratio: 4 / 3;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-.set-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .set-card img {
   display: block;
   width: 100%;
@@ -156,9 +118,8 @@ a { color: inherit; }
 .set-card-text {
   position: absolute;
   inset: auto 0 0 0;
-  padding: 64px 20px 18px;
-  /* Strong enough at the bottom that white text stays readable on bright photos. */
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.45) 40%, rgba(0, 0, 0, 0.8));
+  padding: 48px 20px 18px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
 }
 .set-card h2 {
   margin: 0;
@@ -233,22 +194,11 @@ a { color: inherit; }
 
 /* ---------- Set page ---------- */
 .back-link {
-  display: inline-flex;
-  gap: 6px;
-  padding: 6px 0; /* a bigger target for fingers */
   color: var(--muted);
-  font-size: 0.95rem;
-  text-decoration: none;
+  font-size: 0.9rem;
 }
-.back-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
-.set-heading h1 { margin: 8px 0 4px; }
-/* "March 2025 · Kyoto, Japan · 24 photos" */
-.set-meta { display: flex; flex-wrap: wrap; margin: 0 0 12px; color: var(--muted); font-size: 0.95rem; }
-.set-meta span + span::before { content: "·"; margin: 0 10px; }
 .set-description {
-  color: var(--text-soft);
-  font-size: 1.05rem;
-  line-height: 1.7;
+  color: var(--muted);
   max-width: 65ch;
   white-space: pre-line; /* keep the line breaks you typed */
 }
@@ -308,9 +258,7 @@ button {
   background: var(--text);
   color: var(--bg);
   cursor: pointer;
-  transition: opacity 0.15s, border-color 0.15s, background-color 0.15s, color 0.15s;
 }
-button:hover:not(:disabled) { opacity: 0.88; }
 button:disabled { opacity: 0.6; cursor: wait; }
 .button-secondary {
   background: transparent;
@@ -499,9 +447,8 @@ progress { width: 100%; height: 8px; }
   background: none;
   cursor: zoom-in;
 }
-.thumb-button { overflow: hidden; }
-.thumb-button img { border-radius: 4px; transition: opacity 0.2s, transform 0.4s ease; }
-.thumb-button:hover img { opacity: 0.92; transform: scale(1.015); }
+.thumb-button img { transition: opacity 0.15s; }
+.thumb-button:hover img { opacity: 0.9; }
 
 /* ---------- Full-screen viewer ---------- */
 .no-scroll { overflow: hidden; }
@@ -724,7 +671,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
   left: 6px;
   padding: 2px 8px;
   border-radius: 4px;
-  background: #a16207; /* dark enough for white text to pass contrast checks */
+  background: #ca8a04;
   color: #fff;
   font-size: 0.75rem;
   font-weight: 600;
@@ -751,21 +698,12 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 /* ---------- Footer ---------- */
 .site-footer {
   max-width: 1200px;
-  margin: 24px auto 0;
-  padding: 28px 16px 48px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   border-top: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 24px;
 }
-.footer-copy { margin: 0; }
-.footer-nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
-.footer-nav a { padding: 6px 0; text-decoration: none; }
-.footer-nav a:hover { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
 
 /* ---------- Drafts ---------- */
 .draft-badge {
@@ -813,7 +751,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 
 /* ---------- Not found page ---------- */
 .not-found { text-align: center; padding-top: 10vh; min-height: 50vh; }
-.not-found-code { font-size: 4.5rem; font-weight: 700; margin: 0; color: var(--muted); letter-spacing: -0.02em; }
+.not-found-code { font-size: 4rem; font-weight: 700; margin: 0; color: var(--border); }
 .not-found h1 { margin-top: 0; }
 .button-link {
   display: inline-block;
@@ -884,8 +822,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 /* ---------- Categories (home page filter) ---------- */
 .category-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
 .category-nav a {
-  padding: 8px 16px;
-  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  padding: 6px 14px;
   border: 1px solid var(--border);
   border-radius: 999px;
   text-decoration: none;
@@ -948,9 +885,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 .license-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
 .license-table th, .license-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .license-table code { font-size: 1rem; font-weight: 600; letter-spacing: 0.04em; }
-/* Switched-off codes: greyed text (not faded with opacity, which made the text too faint to read). */
-.license-table tr.is-off td { color: var(--muted); }
-.license-table tr.is-off code { text-decoration: line-through; }
+.license-table tr.is-off { opacity: 0.55; }
 .license-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .license-actions button { padding: 4px 10px; font-size: 0.85rem; }
 .set-checklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 16px; margin: 0 0 12px; }
@@ -1128,6 +1063,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 .featured-badge { background: #ede9fe; color: #5b21b6; }
 .month-boxes { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .month-boxes .checkbox { display: inline-flex !important; margin: 0 !important; }
+.set-location { margin: -8px 0 8px; color: var(--muted); font-size: 0.95rem; }
 .related-sets { margin: 56px 0 0; padding-top: 32px; border-top: 1px solid var(--border); }
 .related-sets h2 { margin: 0 0 16px; font-size: 1.2rem; }
 .related-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 16px; }
@@ -1164,26 +1100,4 @@ main img,
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-}
-
-/* ---------- Phones: a tidier header and hero ---------- */
-@media (max-width: 600px) {
-  .site-header { padding: 16px; gap: 10px; }
-  .site-name { font-size: 1.05rem; letter-spacing: 0.04em; }
-  .site-nav { gap: 14px; }
-  /* Taller tap areas for the text links (at least about 44 px). */
-  .site-nav a { padding: 10px 0; }
-  .hero { height: 52vh; min-height: 300px; }
-  .hero-tagline { font-size: 1.6rem; }
-  .site-footer { flex-direction: column; align-items: flex-start; }
-}
-
-/* ---------- Less motion for visitors who ask for it ---------- */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .set-card:hover, .thumb-button:hover img { transform: none; }
 }

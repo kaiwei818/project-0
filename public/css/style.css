@@ -766,11 +766,6 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 
 /* ---------- Site navigation (Work / About) ---------- */
 .site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.site-nav { display: flex; gap: 20px; }
-.site-nav a { text-decoration: none; color: var(--muted); }
-.site-nav a:hover,
-.site-nav a[aria-current="page"] { color: var(--text); }
-.site-nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 6px; }
 
 /* ---------- About page ---------- */
 .about {
@@ -921,7 +916,6 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 /* Show the moon in light mode (tap for dark), the sun in dark mode. */
 .theme-toggle[data-showing="light"] .icon-sun,
 .theme-toggle[data-showing="dark"] .icon-moon { display: none; }
-.site-nav { align-items: center; }
 
 @media (prefers-reduced-motion: reduce) {
   .set-card img { transition: none; }
@@ -1101,3 +1095,177 @@ main img,
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* ---------- Header that stays at the top ---------- */
+/* Public pages: the header stays in view while scrolling, so the menu is
+   always one tap away. The shadow trick paints its background the full width
+   of the window, even though the header itself is at most 1200 px wide. */
+.site-header:not(.admin-header) {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  background: var(--bg);
+  box-shadow: 0 0 0 100vmax var(--bg);
+  clip-path: inset(0 -100vmax);
+  /* Stays in place while the rest of the page fades (see "Smooth page changes"). */
+  view-transition-name: site-header;
+}
+
+/* ---------- The menu button (top right) ---------- */
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+}
+.menu-button:hover { border-color: var(--text); }
+.menu-button svg,
+.menu-close svg,
+.menu-action svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.menu-action .icon-moon { fill: currentColor; stroke: none; }
+.menu-action[data-showing="light"] .icon-sun,
+.menu-action[data-showing="dark"] .icon-moon { display: none; }
+
+/* ---------- Menu: a panel that slides in from the right ---------- */
+.site-menu {
+  /* <dialog> starts as a box in the middle; make it a full-height side panel. */
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(380px, 88vw);
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.18);
+  /* Sliding: from off-screen to its place, and back when closing. */
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), overlay 0.32s allow-discrete, display 0.32s allow-discrete;
+}
+.site-menu[open] { transform: translateX(0); }
+@starting-style { .site-menu[open] { transform: translateX(100%); } }
+.site-menu::backdrop {
+  background: rgba(0, 0, 0, 0);
+  transition: background-color 0.32s, overlay 0.32s allow-discrete, display 0.32s allow-discrete;
+}
+.site-menu[open]::backdrop { background: rgba(0, 0, 0, 0.4); }
+@starting-style { .site-menu[open]::backdrop { background: rgba(0, 0, 0, 0); } }
+
+.menu-panel { display: flex; flex-direction: column; height: 100%; padding: 14px 24px 24px; overflow-y: auto; }
+.menu-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.menu-title { font-weight: 600; letter-spacing: 0.04em; }
+.menu-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+}
+.menu-close:hover { background: var(--border); }
+.menu-nav ul { list-style: none; margin: 0; padding: 0; }
+.menu-main a {
+  display: block;
+  padding: 8px 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.menu-main a:hover,
+.menu-list a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.menu-nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 2px; }
+.menu-heading {
+  margin: 24px 0 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.menu-list a { display: block; padding: 7px 0; text-decoration: none; color: var(--text); }
+.menu-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.menu-chips a { padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px; font-size: 0.9rem; }
+.menu-actions { display: grid; gap: 8px; margin-top: auto; padding-top: 24px; }
+.menu-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.menu-action:hover { border-color: var(--text); }
+
+/* ---------- Footer: contact details on every page ---------- */
+.site-footer:not(:empty) { display: grid; gap: 24px; padding-top: 40px; }
+.footer-heading { margin: 0 0 10px; color: var(--text); font-size: 1.1rem; }
+.footer-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 0.95rem; }
+.footer-links li { display: flex; gap: 10px; }
+.footer-links a { color: var(--text); }
+.footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
+.footer-copy { margin: 0; }
+.footer-top { text-decoration: none; }
+.footer-top:hover { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
+
+/* ---------- Smooth page changes ---------- */
+/* Browsers that support it (Chrome, Edge, Safari 18) fade from one page to the
+   next instead of flashing white, while the header stays still. Others just
+   change pages as before. Together with the Speculation-Rules header (pages
+   load early when you point at a link), moving around feels instant. */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: page-out 0.18s ease both; }
+::view-transition-new(root) { animation: page-in 0.28s ease both; }
+@keyframes page-out { to { opacity: 0; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* Links to a place on the same page ("Contact", "Back to top") glide there. */
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+/* Photos show a soft color while they load, instead of a white gap. */
+.thumb-button,
+.set-card,
+.hero { background-color: var(--card); }
+
+/* The photo viewer fades in and out instead of appearing at once. */
+.lightbox {
+  opacity: 0;
+  transition: opacity 0.25s ease, overlay 0.25s allow-discrete, display 0.25s allow-discrete;
+}
+.lightbox[open] { opacity: 1; }
+@starting-style { .lightbox[open] { opacity: 0; } }
+
+/* Visitors who ask their device for less motion get none of this movement. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+  .site-menu, .site-menu::backdrop, .lightbox { transition: none; }
+}
+/* The light / dark button inside the menu: a full row, not the small round icon. */
+.menu-action.theme-toggle { justify-content: flex-start; width: 100%; height: auto; border-radius: 10px; color: var(--text); }
+.menu-action.theme-toggle svg { width: 20px; height: 20px; }
+.footer-links .contact-label { min-width: 0; color: var(--muted); }

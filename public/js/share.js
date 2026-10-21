@@ -106,9 +106,16 @@
   }
 
   async function onShare(event) {
-    const button = event.currentTarget;
+    let button = event.currentTarget;
     if (openFor === button) return closeMenu();
     closeMenu();
+    // The button in the ☰ menu: close the menu first (the share menu cannot
+    // show on top of it), and place the share menu under the ☰ button instead.
+    const dialog = button.closest("dialog");
+    if (dialog) {
+      dialog.close();
+      button = document.getElementById("menu-button") || button;
+    }
     if (preferNative) {
       try {
         await navigator.share(pageInfo());

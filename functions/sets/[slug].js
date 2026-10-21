@@ -7,6 +7,7 @@
 
 import { isLoggedIn } from "../../lib/auth.js";
 import { withPageMeta } from "../../lib/meta.js";
+import { galleryData } from "../../lib/structured.js";
 import { decodeSlug, setWithPhotos } from "../../lib/queries.js";
 import { relatedSets } from "../../lib/related.js";
 import { jsonForPage, photoThumbHtml, relatedCardHtml } from "../../lib/render.js";
@@ -77,5 +78,7 @@ export async function onRequestGet({ request, env, params }) {
     // The 1200 px thumbnail, not the 3000 px version: link previews are small,
     // and some apps give up on large images.
     image: set.cover_thumb_key ? `${url.origin}/img/${set.cover_thumb_key}` : "",
+    // Drafts are never indexed, so they need no structured data.
+    structuredData: set.published ? galleryData(url.origin, set) : null,
   });
 }

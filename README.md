@@ -38,6 +38,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 12. [Share buttons, the watermark toolkit, and the storage limit](docs/lessons/12-share-toolkit-storage.md)
 13. [Duplicate warnings, Download all, the activity log, and scheduled publishing](docs/lessons/13-duplicates-downloads-log-schedule.md)
 14. [Hero choices, related sets, rate limits, and download receipts](docs/lessons/14-hero-related-limits-receipts.md)
+15. [Getting winstonlens.com into Google](docs/lessons/15-google-after-new-domain.md)
 
 ---
 
@@ -103,7 +104,8 @@ After any code change, run `npm run deploy` again. If a change adds a file to
 
 ## Settings
 
-The site name, owner, and description are in `lib/site.js`. Change them there and
+The site name, owner, description, and main domain (plus the old addresses that
+redirect to it) are in `lib/site.js`. Change them there and
 deploy; every page picks them up.
 
 | Name | Where | Required | What it is |

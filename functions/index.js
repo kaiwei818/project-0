@@ -9,6 +9,7 @@
 
 import { pickHero } from "../lib/hero.js";
 import { withPageMeta } from "../lib/meta.js";
+import { homeData } from "../lib/structured.js";
 import { categoriesInUse, publishedSets } from "../lib/queries.js";
 import { escapeHtml, heroHtml, setCardHtml } from "../lib/render.js";
 import { SITE } from "../lib/site.js";
@@ -60,5 +61,6 @@ export async function onRequestGet({ request, env }) {
     title: current ? current.name : "",
     url: current ? `${url.origin}/?category=${encodeURIComponent(current.slug)}` : url.origin + "/",
     image: (hero?.set || sets[0])?.cover_thumb_key ? `${url.origin}/img/${(hero?.set || sets[0]).cover_thumb_key}` : "",
+    structuredData: current ? null : homeData(url.origin),
   });
 }

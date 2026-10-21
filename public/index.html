@@ -22,8 +22,6 @@
   <script src="/js/protect.js" defer></script>
 </head>
 <body>
-  <!-- For keyboard and screen reader users: jump past the header straight to the content. -->
-  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
     <nav class="site-nav" aria-label="Main">
@@ -39,7 +37,7 @@
     </nav>
   </header>
 
-  <main id="main" tabindex="-1">
+  <main>
     <h1 class="visually-hidden">Photo sets</h1>
     <!-- The big featured photo, filled in by functions/index.js (only on the
          unfiltered home page; the plain tagline below is used otherwise). -->
@@ -53,12 +51,7 @@
   </main>
 
   <footer class="site-footer">
-    <p class="footer-copy">© <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span></p>
-    <nav class="footer-nav" aria-label="Footer">
-      <a href="/">Work</a>
-      <a href="/about">About</a>
-      <a href="#main">Back to top</a>
-    </nav>
+    © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
   </footer>
 
 </body>

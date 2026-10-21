@@ -21,8 +21,6 @@
   <script src="/js/protect.js" defer></script>
 </head>
 <body>
-  <!-- For keyboard and screen reader users: jump past the header straight to the content. -->
-  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
     <nav class="site-nav" aria-label="Main">
@@ -35,12 +33,12 @@
     </nav>
   </header>
 
-  <main id="main" tabindex="-1">
+  <main>
     <!-- Shown only when you, logged in, preview a set that is still a draft. -->
     <p class="draft-banner" id="draft-banner" hidden>
       Draft preview: only you can see this set. Publish it from the admin page.
     </p>
-    <a class="back-link" href="/"><span aria-hidden="true">←</span> All sets</a>
+    <a class="back-link" href="/">All sets</a>
     <div class="set-heading">
       <h1 id="set-title"></h1>
       <!-- Shares this set (see js/share.js). -->
@@ -48,8 +46,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v8h14v-8"/></svg> Share
       </button>
     </div>
-    <!-- Date · location · number of photos, filled in by functions/sets/[slug].js. -->
-    <p class="set-meta" id="set-meta"></p>
+    <p class="set-location" id="set-location"></p>
     <p class="set-description" id="set-description"></p>
     <!-- functions/sets/[slug].js fills in the title, description, and photos. -->
     <ul class="photo-grid" id="photo-grid"></ul>
@@ -61,7 +58,7 @@
       <p class="muted" id="license-help">Enter the code you received to download full-quality copies without the watermark.</p>
       <form id="license-form" class="inline-form">
         <label for="license-code" class="visually-hidden">License code</label>
-        <input id="license-code" type="text" placeholder="WL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-describedby="license-help license-error">
+        <input id="license-code" type="text" placeholder="WL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
         <button type="submit">Unlock</button>
       </form>
       <p class="form-error" id="license-error" role="alert"></p>
@@ -83,12 +80,7 @@
   </main>
 
   <footer class="site-footer">
-    <p class="footer-copy">© <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span></p>
-    <nav class="footer-nav" aria-label="Footer">
-      <a href="/">Work</a>
-      <a href="/about">About</a>
-      <a href="#main">Back to top</a>
-    </nav>
+    © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
   </footer>
 
   <!-- The full-screen viewer. Hidden until a photo is tapped (see js/lightbox.js). -->
@@ -96,9 +88,7 @@
     <div class="lightbox-stage">
       <img id="lightbox-img" alt="" draggable="false">
     </div>
-    <p class="lightbox-counter" id="lightbox-counter" aria-hidden="true"></p>
-    <!-- Read aloud by screen readers each time the photo changes. -->
-    <p class="visually-hidden" id="lightbox-status" aria-live="polite"></p>
+    <p class="lightbox-counter" id="lightbox-counter"></p>
     <div class="lightbox-info" id="lightbox-info" hidden>
       <p class="lightbox-caption" id="lightbox-caption"></p>
       <p class="lightbox-camera" id="lightbox-camera"></p>

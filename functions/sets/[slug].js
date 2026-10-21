@@ -9,7 +9,7 @@ import { isLoggedIn } from "../../lib/auth.js";
 import { withPageMeta } from "../../lib/meta.js";
 import { decodeSlug, setWithPhotos } from "../../lib/queries.js";
 import { relatedSets } from "../../lib/related.js";
-import { escapeHtml, jsonForPage, monthYear, photoThumbHtml, relatedCardHtml } from "../../lib/render.js";
+import { jsonForPage, photoThumbHtml, relatedCardHtml } from "../../lib/render.js";
 
 export async function onRequestGet({ request, env, params }) {
   const set = await setWithPhotos(env, decodeSlug(params.slug));
@@ -34,13 +34,9 @@ export async function onRequestGet({ request, env, params }) {
         else el.remove();
       },
     })
-    // "March 2025 · Kyoto, Japan · 24 photos"
-    .on("#set-meta", {
+    .on("#set-location", {
       element(el) {
-        const count = set.photos.length;
-        const parts = [monthYear(set.shot_date), set.location, count ? `${count} ${count === 1 ? "photo" : "photos"}` : ""]
-          .filter(Boolean).map((part) => `<span>${escapeHtml(part)}</span>`);
-        if (parts.length) el.setInnerContent(parts.join(""), { html: true });
+        if (set.location) el.setInnerContent(set.location);
         else el.remove();
       },
     })

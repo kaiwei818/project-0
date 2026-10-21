@@ -38,6 +38,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 12. [Share buttons, the watermark toolkit, and the storage limit](docs/lessons/12-share-toolkit-storage.md)
 13. [Duplicate warnings, Download all, the activity log, and scheduled publishing](docs/lessons/13-duplicates-downloads-log-schedule.md)
 14. [Hero choices, related sets, rate limits, and download receipts](docs/lessons/14-hero-related-limits-receipts.md)
+15. [A more polished and accessible site](docs/lessons/15-design-accessibility.md)
 
 ---
 

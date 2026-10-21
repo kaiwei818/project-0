@@ -21,6 +21,8 @@
   <script src="/js/protect.js" defer></script>
 </head>
 <body>
+  <!-- For keyboard and screen reader users: jump past the header straight to the content. -->
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
     <nav class="site-nav" aria-label="Main">
@@ -38,7 +40,7 @@
 
   <!-- functions/about.js fills in the portrait, bio, and contact details
        from what you saved in the admin area. -->
-  <main class="about">
+  <main id="main" tabindex="-1" class="about">
     <div class="about-portrait" id="about-portrait"></div>
     <div class="about-text">
       <h1>About <span data-site="owner"></span></h1>
@@ -49,7 +51,12 @@
   </main>
 
   <footer class="site-footer">
-    © <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span>
+    <p class="footer-copy">© <span data-site="year"></span> <span data-site="owner"></span> · <span data-site="name"></span></p>
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/">Work</a>
+      <a href="/about">About</a>
+      <a href="#main">Back to top</a>
+    </nav>
   </footer>
 </body>
 </html>

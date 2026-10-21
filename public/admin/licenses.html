@@ -9,6 +9,8 @@
   <script src="/js/theme.js"></script>
 </head>
 <body>
+  <!-- For keyboard and screen reader users: jump past the header straight to the content. -->
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header admin-header">
     <a class="site-name" href="/admin/"><span data-site="name"></span> admin</a>
     <nav>
@@ -20,7 +22,7 @@
     </nav>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <a class="back-link" href="/admin/">All sets</a>
     <h1>License codes</h1>
     <p><a href="/admin/receipts">See download receipts</a> (every download, with code, photo, place, and time)</p>
@@ -53,7 +55,7 @@
       <p class="muted" id="codes-empty" hidden>No codes yet.</p>
       <table class="license-table" id="codes-table" hidden>
         <thead>
-          <tr><th>Code</th><th>For</th><th class="hide-small">Sets</th><th>Used</th><th class="hide-small">Valid until</th><th></th></tr>
+          <tr><th>Code</th><th>For</th><th class="hide-small">Sets</th><th>Used</th><th class="hide-small">Valid until</th><th><span class="visually-hidden">Actions</span></th></tr>
         </thead>
         <tbody id="codes-body"></tbody>
       </table>

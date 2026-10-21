@@ -59,6 +59,9 @@ a { color: inherit; }
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+/* After a click or tap, no outline (data-pointer is set by theme.js; a key
+   press removes it). Text boxes keep theirs, to show where typing goes. */
+html[data-pointer] :focus-visible:not(input, textarea, select) { outline: none; }
 
 /* Hidden on screen but still read by screen readers. */
 .visually-hidden {

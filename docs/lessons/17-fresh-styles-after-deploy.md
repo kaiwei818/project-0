@@ -57,3 +57,18 @@ In Safari, Option + Command + R reloads and ignores saved copies.
 The fade between pages needs Safari 18.2 or newer (macOS and iOS 18.2,
 from December 2024). "Load the next page before you click" is a Chrome and
 Edge feature; Safari changes pages normally, just without the head start.
+
+## The blue outline after a click (also Safari)
+
+The blue outline shows keyboard users which link or button they are on. When
+the menu or the photo viewer opens, the focus moves into it (to the current
+page's link, or the × button), and when it closes, the focus goes back to the
+button that opened it. Without that, keyboard users would lose their place.
+
+Chrome only draws the outline when you use the keyboard. Safari also drew it
+after a click or a tap. Now `public/js/theme.js` notes how you last interacted:
+
+- a click or tap hides the outline (it sets `data-pointer` on the page)
+- any key press (Tab, arrows, Enter) shows it again
+
+Text boxes keep their outline either way, so you always see where typing goes.

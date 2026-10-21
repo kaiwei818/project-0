@@ -1,4 +1,4 @@
-// Light and dark mode.
+// Light and dark mode, and (at the end) focus outlines only for keyboard users.
 //
 // By default the site follows the visitor's device setting. The sun/moon
 // button in the header overrides it, and the choice is remembered in this
@@ -59,4 +59,21 @@
     // If the device switches (for example at sunset) and no choice was saved, follow it.
     darkQuery.addEventListener("change", () => updateButton(button));
   });
+})();
+
+// ---------- Focus outlines only for keyboard users ----------
+// Opening the menu or the photo viewer moves the focus into it, and closing it
+// moves the focus back, so keyboard users never lose their place. Safari then
+// draws the blue outline even when the visitor clicked or tapped. So after a
+// click or tap, data-pointer on <html> hides the outline (see style.css), and
+// the next key press (Tab, arrows, Enter...) brings it back.
+(function () {
+  const root = document.documentElement;
+  document.addEventListener("pointerdown", () => {
+    root.dataset.pointer = "";
+  }, true);
+  document.addEventListener("keydown", (event) => {
+    if (event.metaKey || event.ctrlKey) return; // shortcuts like Cmd+C are not moving around
+    delete root.dataset.pointer;
+  }, true);
 })();

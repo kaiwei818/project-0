@@ -545,7 +545,7 @@ function pumpProcessing() {
 }
 
 async function processItem(item) {
-  const worker = idleWorkers.pop() || new Worker("/js/image-worker.js", { type: "module" });
+  const worker = idleWorkers.pop() || new Worker(new URL("./image-worker.js", import.meta.url), { type: "module" });
   const result = await new Promise((resolve) => {
     worker.onmessage = (event) => resolve(event.data);
     worker.onerror = () => resolve({ error: "Processing failed." });

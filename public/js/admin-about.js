@@ -76,7 +76,7 @@ $("portrait-input").addEventListener("change", async (event) => {
   status.textContent = "Shrinking...";
 
   // The same background worker the set upload page uses, without a watermark.
-  const worker = new Worker("/js/image-worker.js", { type: "module" });
+  const worker = new Worker(new URL("./image-worker.js", import.meta.url), { type: "module" });
   const result = await new Promise((resolve) => {
     worker.onmessage = (e) => resolve(e.data);
     worker.onerror = () => resolve({ error: "Processing failed." });

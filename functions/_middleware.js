@@ -7,6 +7,9 @@
 //   3. on public pages, fills in the ☰ menu and the "Get in touch" footer
 //      (lib/chrome.js), and tells browsers they may load the next page early
 //      (the Speculation-Rules header, see public/speculation-rules.json)
+//   4. on HTML pages, gives every style and script a versioned address, so
+//      browsers never mix a new page with an old saved copy of the CSS
+//      (see "Fresh styles and scripts" at the end of this file)
 //
 // Doing this in one place means no page can forget it.
 //
@@ -36,6 +39,9 @@ export async function onRequest({ request, env, next }) {
     return Response.redirect(url.toString(), ["GET", "HEAD"].includes(request.method) ? 301 : 308);
   }
 
+  const versioned = url.pathname.match(VERSIONED_PATH);
+  if (versioned) return serveVersioned(request, env, url, versioned[1], versioned[2]);
+
   const original = await next();
   const response = new Response(original.body, original); // a copy we can change
   addSecurityHeaders(response.headers);
@@ -63,6 +69,17 @@ export async function onRequest({ request, env, next }) {
   }
 
   let rewriter = new HTMLRewriter();
+  const version = await assetVersion(env, url);
+  if (version) {
+    // <link href="/css/style.css">  becomes  <link href="/v/3f9a0c2b7d1e/css/style.css">
+    rewriter = rewriter
+      .on('link[rel="stylesheet"][href^="/css/"]', {
+        element(el) { el.setAttribute("href", `/v/${version}${el.getAttribute("href")}`); },
+      })
+      .on('script[src^="/js/"]', {
+        element(el) { el.setAttribute("src", `/v/${version}${el.getAttribute("src")}`); },
+      });
+  }
   if (chrome) {
     rewriter = rewriter
       .on("#site-menu", { element(el) { el.setInnerContent(chrome.menu, { html: true }); } })
@@ -110,4 +127,50 @@ async function loadChrome(env, url) {
     console.error("Could not load the menu:", err);
     return { menu: menuHtml({ sets: [], categories: [], path: url.pathname }), footer: footerHtml({}) };
   }
+}
+
+// ---------- Fresh styles and scripts ----------
+// Cloudflare tells browsers to keep a saved copy of CSS and JS files for 4
+// hours (the "Browser Cache TTL" setting). So right after a deploy, a browser
+// can show the new page with the old styles: the menu and footer then look
+// unstyled. The fix is to change the address whenever a file changes.
+//
+// npm run deploy saves a fingerprint of all CSS and JS files in
+// public/asset-version.txt (scripts/deploy.mjs). Pages then load
+// /v/<fingerprint>/css/style.css instead of /css/style.css. A changed file
+// means a new fingerprint, a new address, and a fresh download. An unchanged
+// one is kept by the browser for a year, so pages also load faster.
+//
+// Scripts that load other scripts ("./lightbox.js") stay inside the same
+// /v/<fingerprint>/ folder, so they are fresh too.
+
+const VERSIONED_PATH = /^\/v\/([0-9a-f]{12})(\/(?:css|js)\/.+)$/;
+
+// Read once per Cloudflare server process. A new deploy starts new processes.
+let versionPromise = null;
+function assetVersion(env, url) {
+  versionPromise ||= env.ASSETS.fetch(new URL("/asset-version.txt", url))
+    .then((res) => (res.ok ? res.text() : ""))
+    .then((text) => (/^[0-9a-f]{12}$/.test(text.trim()) ? text.trim() : ""))
+    .catch((err) => {
+      console.error("Could not read the asset version:", err);
+      versionPromise = null; // try again on the next request
+      return "";
+    });
+  return versionPromise;
+}
+
+async function serveVersioned(request, env, url, version, path) {
+  const file = await env.ASSETS.fetch(new Request(new URL(path, url), request));
+  const response = new Response(file.body, file);
+  addSecurityHeaders(response.headers);
+  if (file.ok || file.status === 304) {
+    // An address from an older deploy (a page opened before it) still works,
+    // but that copy must not be kept: it is today's file under an old name.
+    response.headers.set(
+      "Cache-Control",
+      version === (await assetVersion(env, url)) ? "public, max-age=31536000, immutable" : "no-store",
+    );
+  }
+  return response;
 }

@@ -1156,6 +1156,9 @@ main img,
   background: var(--bg);
   color: var(--text);
   box-shadow: -12px 0 40px rgba(0, 0, 0, 0.18);
+  /* Stays above the header while it slides out (Safari lets go of a closing
+     dialog's "always on top" place at once; Chrome keeps it until the end). */
+  z-index: 100;
   /* Sliding: from off-screen to its place, and back when closing. */
   transform: translateX(100%);
   transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), overlay 0.32s allow-discrete, display 0.32s allow-discrete;
@@ -1251,8 +1254,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 .set-card,
 .hero { background-color: var(--card); }
 
-/* The photo viewer fades in and out instead of appearing at once. */
+/* The photo viewer fades in and out instead of appearing at once. While it
+   fades out, it keeps covering the screen, in Safari too (see .site-menu). */
 .lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   opacity: 0;
   transition: opacity 0.25s ease, overlay 0.25s allow-discrete, display 0.25s allow-discrete;
 }

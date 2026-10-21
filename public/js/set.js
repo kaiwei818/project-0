@@ -164,8 +164,4 @@ for (const button of document.querySelectorAll("#photo-grid .thumb-button")) {
   else img.addEventListener("load", remember);
 }
 
-// A light deterrent from the spec: no right-click "Save Image" on photos.
-// It only stops casual saving; screenshots and developer tools still work.
-document.addEventListener("contextmenu", (event) => {
-  if (event.target.tagName === "IMG") event.preventDefault();
-});
+// Right-click and long-press saving are blocked for the whole site in protect.js.

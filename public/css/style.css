@@ -1072,3 +1072,32 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 #hero-mode .checkbox,
 #hero-rotate-field .checkbox { display: flex; margin-bottom: 6px; }
 section.panel[aria-labelledby="hero-heading"] { max-width: 720px; }
+
+/* ---------- Photo protection (see js/protect.js) ----------
+   iPhones and iPads ignore the script for long presses, so this does it:
+   -webkit-touch-callout: none   no "Save to Photos / Copy / Share" pop-up
+   user-select: none             a long press does not select the picture
+   -webkit-user-drag: none       the picture cannot be dragged out (Safari)
+   For pictures inside a link or button (grid thumbnails, cards), the picture
+   also ignores touches entirely (pointer-events: none): a long press then
+   lands on the button or link around it, which has no "Save Image" option.
+   Tapping still works, because the tap reaches the button or link instead. */
+main img,
+.lightbox img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.thumb-button img,
+.set-card img,
+.hero img {
+  pointer-events: none;
+}
+.thumb-button,
+.set-card,
+.hero {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

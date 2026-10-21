@@ -3,3 +3,5 @@ node_modules/
 .seed/
 .dev.vars
 .DS_Store
+# Exists only while npm run deploy runs (scripts/deploy.mjs)
+public/asset-version.txt

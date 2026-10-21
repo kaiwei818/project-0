@@ -162,7 +162,7 @@ async function pump() {
 }
 
 function processOne(item) {
-  worker ||= new Worker("/js/toolkit-worker.js", { type: "module" });
+  worker ||= new Worker(new URL("./toolkit-worker.js", import.meta.url), { type: "module" });
   return new Promise((resolve) => {
     worker.onmessage = (event) => resolve(event.data);
     worker.onerror = () => {

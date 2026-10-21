@@ -196,7 +196,8 @@ Admin (login required; writes must come from this site):
 
 - Nothing on the web can fully stop people from saving images. This site only
   serves watermarked, resized copies (originals never go online), blocks
-  right-click saving, and stops other websites from embedding your images.
+  right-click and long-press saving on phones (js/protect.js and the "Photo
+  protection" rules in style.css), and stops other websites from embedding your images.
   Screenshots still work. Someone with a license code can share the clean files
   they download; switch off a code to stop further downloads.
 - One admin account. Logging out removes the cookie from that browser; to log out

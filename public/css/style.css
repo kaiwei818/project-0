@@ -996,6 +996,9 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 }
 .share-item:hover,
 .share-item:focus-visible { background: var(--border); outline: none; }
+/* After a click or tap the first item gets focus too; no highlight for that
+   (see "data-pointer" near the top). Hover still highlights. */
+html[data-pointer] .share-item:focus-visible:not(:hover) { background: none; }
 
 /* ---------- Admin: watermark toolkit ---------- */
 .panel select {

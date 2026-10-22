@@ -42,7 +42,7 @@ export async function onRequest({ request, env, next }) {
   const versioned = url.pathname.match(VERSIONED_PATH);
   if (versioned) return serveVersioned(request, env, url, versioned[1], versioned[2]);
 
-  const original = await next();
+  const original = await next(withoutRevalidation(request));
   const response = new Response(original.body, original); // a copy we can change
   addSecurityHeaders(response.headers);
 
@@ -58,6 +58,10 @@ export async function onRequest({ request, env, next }) {
   if (!(response.headers.get("Content-Type") || "").includes("text/html")) {
     return response;
   }
+  // The page below gets changed (versioned addresses, menu, footer), so the
+  // HTML file's own fingerprint no longer describes it. See withoutRevalidation.
+  response.headers.delete("ETag");
+  response.headers.delete("Last-Modified");
 
   const isPublic = !url.pathname.startsWith("/admin");
   let chrome = null;
@@ -147,17 +151,36 @@ async function loadChrome(env, url) {
 const VERSIONED_PATH = /^\/v\/([0-9a-f]{12})(\/(?:css|js)\/.+)$/;
 
 // Read once per Cloudflare server process. A new deploy starts new processes.
-let versionPromise = null;
-function assetVersion(env, url) {
-  versionPromise ||= env.ASSETS.fetch(new URL("/asset-version.txt", url))
-    .then((res) => (res.ok ? res.text() : ""))
-    .then((text) => (/^[0-9a-f]{12}$/.test(text.trim()) ? text.trim() : ""))
-    .catch((err) => {
-      console.error("Could not read the asset version:", err);
-      versionPromise = null; // try again on the next request
-      return "";
-    });
-  return versionPromise;
+// The answer is kept, not the request for it: Cloudflare does not let one
+// visitor's request wait on work started by another visitor's request.
+let cachedVersion = null; // null = not read yet
+async function assetVersion(env, url) {
+  if (cachedVersion !== null) return cachedVersion;
+  try {
+    const res = await env.ASSETS.fetch(new URL("/asset-version.txt", url));
+    const text = res.ok ? (await res.text()).trim() : "";
+    cachedVersion = /^[0-9a-f]{12}$/.test(text) ? text : "";
+  } catch (err) {
+    console.error("Could not read the asset version:", err);
+    return ""; // try again on the next request
+  }
+  return cachedVersion;
+}
+
+// A browser that has a page saved asks "has it changed?" (If-None-Match).
+// For a plain HTML file, like the admin login page, Pages compares the file
+// itself and answers "no" when only the CSS or JS changed. The browser then
+// keeps its saved page, with the old /v/<fingerprint>/ addresses, for good.
+// So page requests go on without that question, and always get a fresh page.
+function withoutRevalidation(request) {
+  const isPage = (request.headers.get("Accept") || "").includes("text/html")
+    || request.headers.get("Sec-Fetch-Dest") === "document";
+  const asks = request.headers.has("If-None-Match") || request.headers.has("If-Modified-Since");
+  if (!isPage || !asks || !["GET", "HEAD"].includes(request.method)) return undefined;
+  const headers = new Headers(request.headers);
+  headers.delete("If-None-Match");
+  headers.delete("If-Modified-Since");
+  return new Request(request, { headers });
 }
 
 async function serveVersioned(request, env, url, version, path) {

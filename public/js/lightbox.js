@@ -3,6 +3,7 @@
 // Open it by tapping a photo. Then:
 //   next / previous   swipe left or right, the arrow keys, or the < > buttons
 //   close             swipe down, Escape, the × button, or the phone's Back button
+//   zoom              pinch with two fingers; then one finger looks around
 //
 // It uses the built-in <dialog> element, which gives us for free: showing on top
 // of everything, closing on Escape, and keeping keyboard focus inside while open.
@@ -23,6 +24,7 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   const download = document.getElementById("lightbox-download");
   const prevButton = document.getElementById("lightbox-prev");
   const nextButton = document.getElementById("lightbox-next");
+  const status = document.getElementById("lightbox-status");
   let index = 0;
   let returnFocusTo = null;
 
@@ -35,9 +37,22 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     img.removeAttribute("srcset");
     img.src = photo.gridSrc || imageUrl(photo.thumb_key);
     img.alt = photo.alt_text;
+    // Its final size from the start (see style.css), so it does not grow when
+    // the large file replaces the smaller grid one.
+    if (photo.width && photo.height) {
+      img.style.setProperty("--ratio", photo.width / photo.height);
+      img.style.setProperty("--w", `${photo.width}px`);
+    } else {
+      img.style.removeProperty("--ratio");
+      img.style.removeProperty("--w");
+    }
     const large = loadLarge(photo);
     large.onload = () => {
-      if (photos[index] === photo) img.src = large.currentSrc || large.src; // still on this photo?
+      if (photos[index] !== photo) return; // moved on to another photo meanwhile
+      img.src = large.currentSrc || large.src;
+      // Only now start on the neighbors, so they don't slow this one down.
+      preload(index + 1);
+      preload(index - 1);
     };
 
     caption.textContent = photo.caption;
@@ -51,9 +66,11 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     if (href) download.href = href;
     const single = photos.length === 1;
     prevButton.hidden = nextButton.hidden = single;
-
-    preload(index + 1);
-    preload(index - 1);
+    // Screen readers say this when the photo changes (not on opening, when
+    // they already announce the viewer itself).
+    status.textContent = dialog.open
+      ? `Photo ${index + 1} of ${photos.length}${photo.alt_text ? `: ${photo.alt_text}` : ""}`
+      : "";
   }
 
   // Start downloading the neighbors, so swiping to them feels instant.
@@ -116,19 +133,63 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   });
 
   // ---------- Swipes ----------
+  // While a finger moves sideways, the photo moves with it. Not with a mouse,
+  // not while zoomed in, and not for visitors who asked for less motion.
+  const fingers = new Set(); // pointers touching the screen now
+  const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  const zoomed = () => (window.visualViewport?.scale || 1) > 1.01;
   let start = null;
+
+  // Zoomed in with two fingers: one finger then looks around the photo, like
+  // anywhere else, instead of changing or closing it.
+  window.visualViewport?.addEventListener("resize", () => {
+    dialog.style.touchAction = zoomed() ? "auto" : "";
+  });
+
+  function release(event, instant) {
+    fingers.delete(event.pointerId);
+    img.style.transition = instant ? "none" : ""; // a short swipe springs back
+    img.style.transform = "";
+    if (instant) {
+      void img.offsetWidth; // apply the jump now, before the spring-back is turned on again
+      img.style.transition = "";
+    }
+  }
+
   dialog.addEventListener("pointerdown", (event) => {
-    start = { x: event.clientX, y: event.clientY };
+    if (event.isPrimary) fingers.clear(); // the first finger of a new touch
+    fingers.add(event.pointerId);
+    // A second finger means a pinch, not a swipe.
+    start = fingers.size === 1 ? { x: event.clientX, y: event.clientY } : null;
+  });
+  dialog.addEventListener("pointermove", (event) => {
+    if (!start || event.pointerType === "mouse" || fingers.size !== 1 || zoomed() || lessMotion.matches) return;
+    const dx = event.clientX - start.x;
+    const sideways = Math.abs(dx) > Math.abs(event.clientY - start.y);
+    img.style.transition = "none";
+    img.style.transform = sideways ? `translateX(${dx}px)` : "";
+  });
+  dialog.addEventListener("pointercancel", (event) => {
+    start = null;
+    release(event, false);
   });
   dialog.addEventListener("pointerup", (event) => {
-    if (!start) return;
+    if (!start || zoomed()) {
+      start = null;
+      release(event, false);
+      return;
+    }
     const dx = event.clientX - start.x;
     const dy = event.clientY - start.y;
     start = null;
     if (Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy)) {
+      release(event, true); // the next photo appears in the middle, not where the finger was
       show(dx < 0 ? index + 1 : index - 1); // finger moved left: next photo
     } else if (dy > SWIPE_DISTANCE * 2 && Math.abs(dy) > Math.abs(dx)) {
+      release(event, true);
       close(); // swipe down
+    } else {
+      release(event, false);
     }
   });
 

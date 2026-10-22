@@ -21,7 +21,9 @@ a fresh copy.
 
 `npm run deploy` (now `scripts/deploy.mjs`) first makes a **fingerprint** of
 all CSS and JS files: a short code like `3fbf8b8b5688` that changes whenever
-any of those files change. Then every page asks for
+any of those files change. It writes it into `lib/asset-version.js` for the
+upload, and puts the empty value back right after, so `git status` stays
+clean. Then every page asks for
 
 ```
 /v/3fbf8b8b5688/css/style.css     instead of     /css/style.css
@@ -35,6 +37,10 @@ any of those files change. Then every page asks for
   ask again, so pages also load a little faster.
 - Scripts that load other scripts (the photo viewer, the upload helpers) use
   addresses in the same `/v/<fingerprint>/` folder, so they stay in step.
+- Pages are always sent fresh. A browser that asks "has this page changed?"
+  gets the whole page again, not "no change", because the page itself may be
+  the same while the fingerprint in it is new (the admin login page was
+  caught by this).
 
 ## What you do differently
 
@@ -46,6 +52,10 @@ npm run deploy
 
 Do not run `npx wrangler pages deploy` by itself. It still works, but it
 skips the fingerprint, so you are back to the 4 hour problem for that deploy.
+
+If a deploy is cut off hard (the computer turns off mid-way),
+`lib/asset-version.js` may keep a fingerprint and show up in `git status`.
+The next `npm run deploy` puts it right by itself.
 
 ## If a browser still shows something old
 

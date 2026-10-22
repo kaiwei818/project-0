@@ -130,8 +130,8 @@ functions/api/admin/photos/index.js  POST: receive one photo, check it, store it
 
 - The watermark makes stolen copies less useful. It does not stop screenshots,
   and someone with photo-editing skill can remove it.
-- Photos get the alt text "Photo from <set title>" for now. Lesson 4 lets you
-  write a real description for each photo, which helps blind visitors and Google.
+- Photos start without a description (alt text). Lesson 4 lets you write one
+  for each photo, which helps blind visitors and Google (see also lesson 18).
 - HEIC files (the iPhone default) are not accepted yet. Export to JPEG first, or
   set iPhone Camera to **Most Compatible**.
 

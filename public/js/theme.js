@@ -10,6 +10,7 @@
 
 (function () {
   const root = document.documentElement;
+  root.dataset.js = ""; // scripts run: style.css shows the Share button from the start
   const KEY = "theme";
   const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -50,6 +51,9 @@
     updateButton(button);
     button.addEventListener("click", () => {
       const next = current() === "dark" ? "light" : "dark";
+      // Every color changes at once, without the gentle hover fades (style.css).
+      root.classList.add("theme-switching");
+      requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
       root.dataset.theme = next;
       try {
         localStorage.setItem(KEY, next);

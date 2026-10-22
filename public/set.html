@@ -22,7 +22,7 @@
   <script src="/js/protect.js" defer></script>
 </head>
 <body>
-  <header class="site-header" id="top">
+  <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
     <button type="button" class="menu-button" id="menu-button" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -42,7 +42,7 @@
     <div class="set-heading">
       <h1 id="set-title"></h1>
       <!-- Shares this set (see js/share.js). -->
-      <button type="button" class="share-button" data-share hidden>
+      <button type="button" class="share-button" data-share>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v8h14v-8"/></svg> Share
       </button>
     </div>
@@ -94,9 +94,17 @@
       <p class="lightbox-camera" id="lightbox-camera"></p>
     </div>
     <a class="lightbox-download" id="lightbox-download" hidden download>Download</a>
-    <button type="button" class="lightbox-button lightbox-close" id="lightbox-close" aria-label="Close">×</button>
-    <button type="button" class="lightbox-button lightbox-prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
-    <button type="button" class="lightbox-button lightbox-next" id="lightbox-next" aria-label="Next photo">›</button>
+    <button type="button" class="lightbox-button lightbox-close" id="lightbox-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <button type="button" class="lightbox-button lightbox-prev" id="lightbox-prev" aria-label="Previous photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    </button>
+    <button type="button" class="lightbox-button lightbox-next" id="lightbox-next" aria-label="Next photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+    <!-- Read aloud by screen readers when the photo changes ("Photo 2 of 5"). -->
+    <p class="visually-hidden" id="lightbox-status" role="status" aria-atomic="true"></p>
   </dialog>
 
   <script src="/js/set.js" type="module"></script>

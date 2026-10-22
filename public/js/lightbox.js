@@ -150,7 +150,10 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     fingers.delete(event.pointerId);
     img.style.transition = instant ? "none" : ""; // a short swipe springs back
     img.style.transform = "";
-    if (instant) requestAnimationFrame(() => (img.style.transition = ""));
+    if (instant) {
+      void img.offsetWidth; // apply the jump now, before the spring-back is turned on again
+      img.style.transition = "";
+    }
   }
 
   dialog.addEventListener("pointerdown", (event) => {

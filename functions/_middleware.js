@@ -17,6 +17,7 @@
 // Cloudflare Function. The free plan includes 100,000 a day, which is thousands
 // of visitors; one visit to a set is roughly 10 to 40 requests.
 
+import { ASSET_VERSION } from "../lib/asset-version.js";
 import { footerHtml, menuHtml } from "../lib/chrome.js";
 import { CONTACT_KEYS } from "../lib/contact.js";
 import { categoriesInUse } from "../lib/queries.js";
@@ -73,7 +74,7 @@ export async function onRequest({ request, env, next }) {
   }
 
   let rewriter = new HTMLRewriter();
-  const version = await assetVersion(env, url);
+  const version = ASSET_VERSION;
   if (version) {
     // <link href="/css/style.css">  becomes  <link href="/v/3f9a0c2b7d1e/css/style.css">
     rewriter = rewriter
@@ -139,8 +140,8 @@ async function loadChrome(env, url) {
 // can show the new page with the old styles: the menu and footer then look
 // unstyled. The fix is to change the address whenever a file changes.
 //
-// npm run deploy saves a fingerprint of all CSS and JS files in
-// public/asset-version.txt (scripts/deploy.mjs). Pages then load
+// npm run deploy puts a fingerprint of all CSS and JS files into
+// lib/asset-version.js for the upload (scripts/deploy.mjs). Pages then load
 // /v/<fingerprint>/css/style.css instead of /css/style.css. A changed file
 // means a new fingerprint, a new address, and a fresh download. An unchanged
 // one is kept by the browser for a year, so pages also load faster.
@@ -149,23 +150,6 @@ async function loadChrome(env, url) {
 // /v/<fingerprint>/ folder, so they are fresh too.
 
 const VERSIONED_PATH = /^\/v\/([0-9a-f]{12})(\/(?:css|js)\/.+)$/;
-
-// Read once per Cloudflare server process. A new deploy starts new processes.
-// The answer is kept, not the request for it: Cloudflare does not let one
-// visitor's request wait on work started by another visitor's request.
-let cachedVersion = null; // null = not read yet
-async function assetVersion(env, url) {
-  if (cachedVersion !== null) return cachedVersion;
-  try {
-    const res = await env.ASSETS.fetch(new URL("/asset-version.txt", url));
-    const text = res.ok ? (await res.text()).trim() : "";
-    cachedVersion = /^[0-9a-f]{12}$/.test(text) ? text : "";
-  } catch (err) {
-    console.error("Could not read the asset version:", err);
-    return ""; // try again on the next request
-  }
-  return cachedVersion;
-}
 
 // A browser that has a page saved asks "has it changed?" (If-None-Match).
 // For a plain HTML file, like the admin login page, Pages compares the file
@@ -192,7 +176,7 @@ async function serveVersioned(request, env, url, version, path) {
     // but that copy must not be kept: it is today's file under an old name.
     response.headers.set(
       "Cache-Control",
-      version === (await assetVersion(env, url)) ? "public, max-age=31536000, immutable" : "no-store",
+      version === ASSET_VERSION ? "public, max-age=31536000, immutable" : "no-store",
     );
   }
   return response;

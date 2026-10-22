@@ -9,7 +9,7 @@ were changed.
 
 | What was wrong | Now |
 |----------------|-----|
-| Every photo had the same automatic description, "Photo from <set name>", and it kept the old name after a rename | New photos start without one. The old automatic ones are cleared (database step below). Write real ones on each set's admin page: empty boxes say "Not written yet" |
+| Every photo had the same automatic description, "Photo from <set name>", and it kept the old name after a rename | New photos start without one. The old automatic ones are cleared (database step below); anything you wrote yourself is kept. Write real ones on each set's admin page: empty boxes say "Not written yet" |
 | On phones, screen-reader users could not go to the next photo in the viewer | The ‹ › buttons are still there for them, just not drawn; changing photo is read aloud ("Photo 2 of 5") |
 | After pinch-zooming a photo, dragging flipped to the next photo or closed the viewer | While zoomed in, one finger looks around the photo |
 | On a phone, the photos on a set page jumped down when the Share button appeared | The button is there from the first moment |
@@ -39,6 +39,20 @@ Say what is in the photo, in a short sentence, as if describing it on the
 phone: "A hockey player in white skates past the bench", "Fishing boats in
 Keelung harbor at night". No need to start with "Photo of". The set title
 and caption are shown separately, so do not repeat them.
+
+## Photos in renamed sets
+
+The database step only clears text it is sure the site wrote: exactly
+"Photo from" plus the set's current name. If you renamed a set after
+uploading, its photos may still say "Photo from <old name>". Open that set's
+admin page and replace those with real descriptions, or clear the boxes.
+
+To see every description that starts with "Photo from" (this only reads, it
+changes nothing), run on your Mac:
+
+```
+npx wrangler d1 execute portfolio-db --remote --command "SELECT id, alt_text FROM photos WHERE alt_text LIKE 'Photo from %'"
+```
 
 ## Deploy
 

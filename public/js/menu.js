@@ -23,11 +23,16 @@
       if (menu.open) menu.close();
     }
 
+    // Where keyboard focus goes when the menu closes: back to the Menu button,
+    // or to the contact links after "Contact".
+    let focusAfterClose = null;
+
     button.addEventListener("click", open);
     menu.addEventListener("close", () => {
       button.setAttribute("aria-expanded", "false");
       document.body.classList.remove("no-scroll");
-      button.focus();
+      (focusAfterClose || button).focus({ preventScroll: true });
+      focusAfterClose = null;
     });
     menu.querySelector("#menu-close")?.addEventListener("click", close);
 
@@ -36,14 +41,24 @@
       if (event.target === menu) close();
     });
 
-    // "Contact" scrolls to the end of this page, so close the menu first.
+    // "Contact" scrolls to the end of this page, so close the menu first, and
+    // move keyboard focus there too (Tab then continues from the contact links).
     for (const link of menu.querySelectorAll("[data-close-menu]")) {
-      link.addEventListener("click", close);
+      link.addEventListener("click", () => {
+        focusAfterClose = document.querySelector(`${link.hash} a`);
+        close();
+      });
     }
 
     // Coming back with the browser's Back button can restore a page with the
     // menu still open; start closed instead.
     window.addEventListener("pageshow", close);
+
+    // Leaving for another page from the open menu: skip the fade, which would
+    // briefly draw the header on top of the menu.
+    window.addEventListener("pageswap", (event) => {
+      if (menu.open) event.viewTransition?.skipTransition();
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", setup);

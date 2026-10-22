@@ -308,7 +308,8 @@ function createPhotoCard(photo, index) {
 
   const caption = textField(photo, "caption", "Caption (shown in the viewer)");
   const camera = textField(photo, "camera_info", "Camera details (shown in the viewer; clear to hide)");
-  const alt = textField(photo, "alt_text", "Description for blind visitors (alt text)");
+  const alt = textField(photo, "alt_text", "Description for blind visitors (alt text)",
+    "Not written yet: say what is in the photo");
 
   const tools = document.createElement("div");
   tools.className = "photo-card-tools";
@@ -333,7 +334,7 @@ function coverId() {
   return set.cover_photo_id ?? set.photos[0]?.id;
 }
 
-function textField(photo, field, labelText) {
+function textField(photo, field, labelText, placeholder = "") {
   const label = document.createElement("label");
   label.className = "photo-card-field";
   const span = document.createElement("span");
@@ -342,6 +343,7 @@ function textField(photo, field, labelText) {
   input.type = "text";
   input.value = photo[field];
   input.maxLength = { caption: 1000, alt_text: 500, camera_info: 200 }[field];
+  input.placeholder = placeholder;
   const status = document.createElement("span");
   status.className = "save-status";
   status.setAttribute("role", "status");
@@ -616,7 +618,9 @@ async function uploadItem(item) {
   form.append("set_id", setId);
   form.append("width", width);
   form.append("height", height);
-  form.append("alt_text", `Photo from ${set.title}`);
+  // Empty until you write one on this page: an automatic "Photo from <set>"
+  // tells a blind visitor nothing, and goes stale when the set is renamed.
+  form.append("alt_text", "");
   form.append("camera_info", cameraInfo || "");
   const facts = await item.factsReady; // name, fingerprint, capture time (for duplicate warnings later)
   form.append("original_name", item.file.name);

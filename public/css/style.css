@@ -11,6 +11,7 @@
   --card: #ffffff;
   --border: #e7e5e4;
   --focus: #2563eb;
+  --danger: #dc2626;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -21,6 +22,7 @@
     --card: #1c1917;
     --border: #292524;
     --focus: #60a5fa;
+    --danger: #f87171;
   }
 }
 :root[data-theme="dark"] {
@@ -31,6 +33,7 @@
   --card: #1c1917;
   --border: #292524;
   --focus: #60a5fa;
+  --danger: #f87171;
 }
 
 /* ---------- Base ---------- */
@@ -122,20 +125,23 @@ html[data-pointer] :focus-visible:not(input, textarea, select) { outline: none; 
   position: absolute;
   inset: auto 0 0 0;
   padding: 48px 20px 18px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+  /* Dark enough under the text to keep white titles readable on a bright photo
+     (sky, snow), while the top of the photo stays clear. */
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55) 40%, rgba(0, 0, 0, 0.75));
 }
 .set-card h2 {
   margin: 0;
   font-size: 1.35rem;
   line-height: 1.25;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  text-wrap: balance; /* even lines, not one word alone at the end */
 }
 .set-card-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
   margin-top: 4px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.85);
 }
 /* A set without photos: no picture, so plain text on the card color. */
@@ -166,7 +172,7 @@ html[data-pointer] :focus-visible:not(input, textarea, select) { outline: none; 
   position: absolute;
   inset: auto 0 0 0;
   padding: 96px clamp(20px, 4vw, 48px) clamp(20px, 4vw, 40px);
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55) 45%, rgba(0, 0, 0, 0.75));
 }
 .hero-tagline {
   margin: 0 0 12px;
@@ -175,6 +181,7 @@ html[data-pointer] :focus-visible:not(input, textarea, select) { outline: none; 
   line-height: 1.15;
   letter-spacing: -0.01em;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  text-wrap: balance;
 }
 .hero-link {
   display: inline-flex;
@@ -185,11 +192,14 @@ html[data-pointer] :focus-visible:not(input, textarea, select) { outline: none; 
   font-size: 1rem;
 }
 .hero-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+/* The whole photo opens the featured set, not just this line of text. The
+   layer reaches up over the photo and .hero (overflow: hidden) trims it. */
+.hero-link::after { content: ""; position: absolute; inset: -100vh 0 0 0; }
 .hero-label {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.85);
 }
 @media (max-width: 600px) {
   .hero { height: 60vh; margin-bottom: 24px; border-radius: 8px; }
@@ -198,7 +208,11 @@ html[data-pointer] :focus-visible:not(input, textarea, select) { outline: none; 
 /* ---------- Set page ---------- */
 .back-link {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  /* A taller tap area for fingers; the negative margin keeps the layout as is. */
+  display: inline-block;
+  padding: 12px 0;
+  margin: -12px 0;
 }
 .set-description {
   color: var(--muted);
@@ -294,7 +308,7 @@ input {
 .form-error {
   margin: 0;
   min-height: 1.5em;
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .admin-header {
@@ -491,6 +505,13 @@ progress { width: 100%; height: 8px; }
   max-height: 100%;
   object-fit: contain;
   -webkit-touch-callout: none; /* no "Save Image" pop-up on long press in iOS Safari */
+  /* Its final size from the start (lightbox.js sets --ratio and --w from the
+     photo), so it does not grow when the sharper file arrives. */
+  aspect-ratio: var(--ratio);
+  width: min(100%, var(--w), calc((100dvh - 96px) * var(--ratio)));
+  height: auto;
+  /* Springs back after a swipe that was too short (see lightbox.js). */
+  transition: transform 0.15s ease;
 }
 
 .lightbox-counter {
@@ -531,16 +552,36 @@ progress { width: 100%; height: 8px; }
   line-height: 1;
 }
 .lightbox-button:hover { background: rgba(255, 255, 255, 0.25); }
+.lightbox-button svg {
+  display: block;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .lightbox-close { top: 4px; right: 8px; }
 .lightbox-prev,
 .lightbox-next { top: 50%; transform: translateY(-50%); }
 .lightbox-prev { left: 12px; }
 .lightbox-next { right: 12px; }
 
-/* On phones, swiping replaces the arrows, so they stop covering the photo. */
+/* On phones, swiping replaces the arrows, so they stop covering the photo.
+   They are only hidden from sight: screen readers (which use one-finger swipes
+   for themselves) still find them. */
 @media (hover: none) and (pointer: coarse) {
   .lightbox-prev,
-  .lightbox-next { display: none; }
+  .lightbox-next {
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 /* ---------- Managing sets and photos ---------- */
@@ -704,7 +745,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
   margin: 0 auto;
   padding: 32px 16px 48px;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   border-top: 1px solid var(--border);
 }
 
@@ -755,6 +796,9 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 /* ---------- Not found page ---------- */
 .not-found { text-align: center; padding-top: 10vh; min-height: 50vh; }
 .not-found-code { font-size: 4rem; font-weight: 700; margin: 0; color: var(--border); }
+/* Decoration only ("Page not found" below says it), so it is drawn here and
+   not part of the page text. The second line hides it from screen readers. */
+.not-found-code::before { content: "404"; content: "404" / ""; }
 .not-found h1 { margin-top: 0; }
 .button-link {
   display: inline-block;
@@ -773,7 +817,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 /* ---------- About page ---------- */
 .about {
   display: grid;
-  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 420px) minmax(24em, 1fr); /* text never squeezed narrow */
   gap: 48px;
   align-items: start;
   padding-top: 16px;
@@ -825,7 +869,7 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
   border-radius: 999px;
   text-decoration: none;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 .category-nav a:hover { color: var(--text); border-color: var(--text); }
 .category-nav a[aria-current="page"] { background: var(--text); border-color: var(--text); color: var(--bg); }
@@ -966,7 +1010,10 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
   align-items: center;
   gap: 8px 16px;
 }
-.set-heading h1 { margin-right: auto; }
+.set-heading h1 { margin-right: auto; margin-bottom: 8px; }
+/* The description belongs to the title above it, so it sits close to it. */
+.set-heading + .set-description,
+.set-location + .set-description { margin-top: 0; }
 
 .share-menu {
   position: absolute;
@@ -1063,11 +1110,11 @@ html[data-pointer] .share-item:focus-visible:not(:hover) { background: none; }
 .featured-badge { background: #ede9fe; color: #5b21b6; }
 .month-boxes { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .month-boxes .checkbox { display: inline-flex !important; margin: 0 !important; }
-.set-location { margin: -8px 0 8px; color: var(--muted); font-size: 0.95rem; }
+.set-location { margin: 0 0 8px; color: var(--muted); font-size: 0.875rem; }
 .related-sets { margin: 56px 0 0; padding-top: 32px; border-top: 1px solid var(--border); }
 .related-sets h2 { margin: 0 0 16px; font-size: 1.2rem; }
 .related-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 16px; }
-.related-grid .set-card h3 { margin: 0; font-size: 1.1rem; line-height: 1.25; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+.related-grid .set-card h3 { margin: 0; font-size: 1.1rem; line-height: 1.25; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); text-wrap: balance; }
 .related-grid .set-card-text { padding: 36px 16px 14px; }
 #hero-mode .checkbox,
 #hero-rotate-field .checkbox { display: flex; margin-bottom: 6px; }
@@ -1214,7 +1261,10 @@ main img,
 }
 .menu-list a { display: block; padding: 7px 0; text-decoration: none; color: var(--text); }
 .menu-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.menu-chips a { padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px; font-size: 0.9rem; }
+.menu-chips a { padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px; font-size: 0.875rem; }
+/* Same look as the category buttons on the home page. */
+.menu-chips a:hover { text-decoration: none; border-color: var(--text); }
+.menu-chips a[aria-current="page"] { text-decoration: none; background: var(--text); border-color: var(--text); color: var(--bg); }
 .menu-actions { display: grid; gap: 8px; margin-top: auto; padding-top: 24px; }
 .menu-action {
   display: flex;
@@ -1233,12 +1283,12 @@ main img,
 /* ---------- Footer: contact details on every page ---------- */
 .site-footer:not(:empty) { display: grid; gap: 24px; padding-top: 40px; }
 .footer-heading { margin: 0 0 10px; color: var(--text); font-size: 1.1rem; }
-.footer-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 0.95rem; }
+.footer-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 0.875rem; }
 .footer-links li { display: flex; gap: 10px; }
-.footer-links a { color: var(--text); }
+.footer-links a { color: var(--text); padding: 5px 0; margin: -5px 0; } /* taller tap area, same layout */
 .footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; }
 .footer-copy { margin: 0; }
-.footer-top { text-decoration: none; }
+.footer-top { text-decoration: none; display: inline-block; padding: 11px 0; margin: -11px 0; }
 .footer-top:hover { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
 
 /* ---------- Smooth page changes ---------- */
@@ -1271,14 +1321,37 @@ html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 }
 .lightbox[open] { opacity: 1; }
 @starting-style { .lightbox[open] { opacity: 0; } }
+/* The dark background behind it fades along with it. */
+.lightbox::backdrop {
+  opacity: 0;
+  transition: opacity 0.25s ease, overlay 0.25s allow-discrete, display 0.25s allow-discrete;
+}
+.lightbox[open]::backdrop { opacity: 1; }
+@starting-style { .lightbox[open]::backdrop { opacity: 0; } }
 
 /* Visitors who ask their device for less motion get none of this movement. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-  .site-menu, .site-menu::backdrop, .lightbox { transition: none; }
+  .site-menu, .site-menu::backdrop, .lightbox, .lightbox::backdrop, .lightbox-stage img { transition: none; }
 }
 /* The light / dark button inside the menu: a full row, not the small round icon. */
 .menu-action.theme-toggle { justify-content: flex-start; width: 100%; height: auto; border-radius: 10px; color: var(--text); }
 .menu-action.theme-toggle svg { width: 20px; height: 20px; }
 .footer-links .contact-label { min-width: 0; color: var(--muted); }
+
+/* ---------- Gentle hover ---------- */
+/* Buttons and chips fade to their hover color instead of switching at once,
+   like the photos do. Only where there is a mouse. */
+@media (hover: hover) {
+  .menu-button, .share-button, .category-nav a, .menu-chips a, .menu-close,
+  .menu-action, .lightbox-button, .lightbox-download {
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  }
+}
+/* Switching light and dark mode changes every color at once (theme.js). */
+.theme-switching * { transition: none !important; }
+
+/* The Share button shows before the page is first drawn, so the photos below
+   it never jump down. Without scripts it stays hidden (theme.js sets data-js). */
+html:not([data-js]) [data-share] { display: none; }

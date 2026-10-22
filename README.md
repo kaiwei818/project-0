@@ -41,6 +41,7 @@ The original plan is in [photo-portfolio-spec.md](photo-portfolio-spec.md).
 15. [Getting winstonlens.com into Google](docs/lessons/15-google-after-new-domain.md)
 16. [The menu, contact on every page, and smooth page changes](docs/lessons/16-menu-footer-smooth.md)
 17. [Fresh styles after every deploy (the Safari problem)](docs/lessons/17-fresh-styles-after-deploy.md)
+18. [An accessibility and polish pass](docs/lessons/18-uiux-audit.md)
 
 ---
 

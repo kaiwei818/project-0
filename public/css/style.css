@@ -1559,3 +1559,6 @@ main.login { padding-left: 16px; padding-right: 16px; }
     corner-shape: squircle;
   }
 }
+
+/* ---------- Admin: shuffle the photo order ---------- */
+.order-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 16px; }

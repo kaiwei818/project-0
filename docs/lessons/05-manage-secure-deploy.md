@@ -34,6 +34,13 @@ hardening (step 8), and putting the site on the internet (step 9).
 Captions and descriptions save by themselves when you click outside the box; a
 green **Saved** confirms it.
 
+**Shuffle order** (above the photos, in sets with 2 or more) puts the photos in
+a random new order and saves it at once; the public page shows it straight
+away. Press it again for another order. **Undo shuffle** puts back the order
+from before your first shuffle, until you move a photo by hand. If you never
+picked a cover with ★, shuffling keeps today's cover (it marks it with ★), so
+the home page does not change.
+
 ### How reordering works
 
 The browser sends the complete new order, for example `[30, 28, 27, 29]`. The

@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="google-site-verification" content="7Zmj3_jo4RZ66dJ6qedgmStbcZn9X63tziRzR4stH-U" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The color of the phone's browser bar; js/theme.js keeps it in step with dark mode. -->
+  <meta name="theme-color" content="#fafaf9">
   <!-- Text in data-site="..." elements and the title come from lib/site.js (see functions/_middleware.js). -->
   <title data-page=""></title>
   <!-- Link-preview tags, filled in by functions/index.js -->
@@ -16,6 +18,8 @@
   <meta property="og:image" content="">
   <meta name="twitter:card" content="summary">
   <link rel="canonical" href="">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
   <script src="/js/menu.js" defer></script>
@@ -23,6 +27,7 @@
   <script src="/js/protect.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
     <button type="button" class="menu-button" id="menu-button" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false">
@@ -34,7 +39,7 @@
        and opened by js/menu.js. -->
   <dialog class="site-menu" id="site-menu" aria-label="Menu"></dialog>
 
-  <main>
+  <main id="main">
     <h1 class="visually-hidden">Photo sets</h1>
     <!-- The big featured photo, filled in by functions/index.js (only on the
          unfiltered home page; the plain tagline below is used otherwise). -->

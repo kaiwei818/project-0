@@ -19,6 +19,7 @@ export async function onRequestGet(context) {
 
   const { results: photos } = await env.DB.prepare(
     `SELECT id, thumb_key, width, height, caption, alt_text, camera_info, size_bytes,
+            placeholder != '' AS placeholder,
             download_key IS NOT NULL AS downloadable
      FROM photos WHERE set_id = ? ORDER BY sort_order, id`
   ).bind(set.id).all();

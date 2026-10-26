@@ -18,9 +18,11 @@ try {
   licenseCode = sessionStorage.getItem(`license:${slug}`) || "";
 } catch {}
 
+const thumbs = document.querySelectorAll("#photo-grid .thumb-button");
 const lightbox = createLightbox(photos, {
   downloadUrl: (photo) =>
     licenseCode && photo.downloadable ? `/api/download/${photo.id}?code=${encodeURIComponent(licenseCode)}` : "",
+  thumbFor: (index) => thumbs[index] || null,
 });
 
 const licenseForm = document.getElementById("license-form");
@@ -152,7 +154,7 @@ document.getElementById("download-all")?.addEventListener("click", async (event)
   status.textContent = message;
 });
 
-for (const button of document.querySelectorAll("#photo-grid .thumb-button")) {
+for (const button of thumbs) {
   const index = Number(button.dataset.index);
   button.addEventListener("click", () => lightbox.open(index, button));
 
@@ -162,6 +164,15 @@ for (const button of document.querySelectorAll("#photo-grid .thumb-button")) {
   const remember = () => (photos[index].gridSrc = img.currentSrc);
   if (img.complete) remember();
   else img.addEventListener("load", remember);
+}
+
+// A link to one photo (/sets/kyoto?photo=3, from sharing or a reload) opens it.
+// The address first goes back to the plain set page, so Back then closes the
+// viewer and stays on the set, instead of leaving the site.
+const shared = Number(new URLSearchParams(location.search).get("photo")) - 1;
+if (photos[shared]) {
+  history.replaceState(null, "", location.pathname);
+  lightbox.open(shared, thumbs[shared], { instant: true });
 }
 
 // Right-click and long-press saving are blocked for the whole site in protect.js.

@@ -9,7 +9,7 @@
 // Requests with no Referer at all are allowed: opening an image link directly,
 // privacy browser settings, and link-preview bots (iMessage, LINE) look like that.
 
-export async function onRequestGet({ request, env, params }) {
+export async function onRequestGet({ request, env, params, waitUntil }) {
   if (!isAllowedReferer(request, env)) {
     return new Response("Images from this site cannot be shown on other websites.", { status: 403 });
   }
@@ -20,6 +20,17 @@ export async function onRequestGet({ request, env, params }) {
   if (key.startsWith("private/") || key.includes("..")) {
     return new Response("Not found", { status: 404 });
   }
+
+  // Cloudflare's cache in the visitor's region: after the first visitor there,
+  // the photo comes from nearby instead of from storage. Safe because a file
+  // never changes (every upload gets a new key). The address alone is the key,
+  // so the Referer check above still runs for every request.
+  // (On *.pages.dev test addresses this cache does nothing; that is fine.)
+  const cache = caches.default;
+  const cacheKey = new Request(new URL(request.url).toString(), { method: "GET" });
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached;
+
   const object = await env.BUCKET.get(key);
 
   if (!object) {
@@ -37,7 +48,9 @@ export async function onRequestGet({ request, env, params }) {
   // can contain scripts) can run, even if someone opens it directly in a tab.
   headers.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox");
 
-  return new Response(object.body, { headers });
+  const response = new Response(object.body, { headers });
+  waitUntil(cache.put(cacheKey, response.clone()));
+  return response;
 }
 
 // HEAD = "only send me the headers". Some link-preview bots check images this

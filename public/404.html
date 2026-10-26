@@ -3,15 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The color of the phone's browser bar; js/theme.js keeps it in step with dark mode. -->
+  <meta name="theme-color" content="#fafaf9">
   <meta name="robots" content="noindex">
   <!-- Text in data-site="..." elements and the title come from lib/site.js (see functions/_middleware.js). -->
   <title data-page="Page not found"></title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
   <script src="/js/menu.js" defer></script>
   <script src="/js/share.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
     <button type="button" class="menu-button" id="menu-button" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false">
@@ -24,7 +29,7 @@
   <dialog class="site-menu" id="site-menu" aria-label="Menu"></dialog>
 
   <!-- Cloudflare shows this page for any address that does not exist. -->
-  <main class="not-found">
+  <main id="main" class="not-found">
     <p class="not-found-code" aria-hidden="true"></p> <!-- "404", drawn by style.css -->
     <h1>Page not found</h1>
     <p class="muted">This page does not exist, or it has moved.</p>

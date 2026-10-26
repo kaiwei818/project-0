@@ -10,7 +10,7 @@ import { withPageMeta } from "../../lib/meta.js";
 import { galleryData } from "../../lib/structured.js";
 import { decodeSlug, setWithPhotos } from "../../lib/queries.js";
 import { relatedSets } from "../../lib/related.js";
-import { jsonForPage, photoThumbHtml, relatedCardHtml } from "../../lib/render.js";
+import { jsonForPage, monthYear, photoThumbHtml, relatedCardHtml } from "../../lib/render.js";
 
 export async function onRequestGet({ request, env, params }) {
   const set = await setWithPhotos(env, decodeSlug(params.slug));
@@ -35,9 +35,13 @@ export async function onRequestGet({ request, env, params }) {
         else el.remove();
       },
     })
+    // One quiet line under the title: "Keelung, Taiwan · March 2026 · 18 photos".
     .on("#set-location", {
       element(el) {
-        if (set.location) el.setInnerContent(set.location);
+        const count = set.photos.length;
+        const facts = [set.location, monthYear(set.shot_date), count ? `${count} ${count === 1 ? "photo" : "photos"}` : ""];
+        const line = facts.filter(Boolean).join(" · ");
+        if (line) el.setInnerContent(line);
         else el.remove();
       },
     })
@@ -71,14 +75,31 @@ export async function onRequestGet({ request, env, params }) {
     .on("#set-data", { element(el) { el.setInnerContent(jsonForPage(set.photos), { html: true }); } })
     .transform(page);
 
+  // A link to one photo (?photo=3, from the viewer) previews that photo.
+  const photoNumber = Number(url.searchParams.get("photo"));
+  const shared = Number.isInteger(photoNumber) ? set.photos[photoNumber - 1] : null;
+  const cover = shared || {
+    thumb_key: set.cover_thumb_key, width: set.cover_width, height: set.cover_height, alt_text: "",
+  };
+
   return withPageMeta(filled, {
-    title: set.title,
-    description: set.description,
+    title: shared ? `${set.title}, photo ${photoNumber}` : set.title,
+    description: shared ? shared.caption || shared.alt_text || set.description : set.description,
     url: url.origin + url.pathname,
+    shareUrl: shared ? `${url.origin}${url.pathname}?photo=${photoNumber}` : "",
     // The 1200 px thumbnail, not the 3000 px version: link previews are small,
     // and some apps give up on large images.
-    image: set.cover_thumb_key ? `${url.origin}/img/${set.cover_thumb_key}` : "",
+    image: cover.thumb_key ? `${url.origin}/img/${cover.thumb_key}` : "",
+    imageSize: thumbSize(cover),
+    imageAlt: cover.alt_text || set.title,
     // Drafts are never indexed, so they need no structured data.
     structuredData: set.published ? galleryData(url.origin, set) : null,
   });
+}
+
+// The thumbnail is 1200 px on its long edge (or the photo's own size, if smaller).
+function thumbSize({ width, height }) {
+  if (!width || !height) return null;
+  const scale = Math.min(1, 1200 / Math.max(width, height));
+  return { width: width * scale, height: height * scale };
 }

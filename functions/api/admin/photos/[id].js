@@ -3,6 +3,7 @@
 // DELETE /api/admin/photos/:id   deletes the row and all of its image files
 
 import { logActivity, quoted } from "../../../../lib/activity.js";
+import { cleanPlaceholder } from "../../../../lib/render.js";
 
 // The photo with its set's title, for the activity log.
 function findPhoto(env, id) {
@@ -40,6 +41,8 @@ export async function onRequestPatch(context) {
   if ("alt_text" in body) changes.alt_text = String(body.alt_text).trim().slice(0, 500);
   // camera_info: the camera details line in the viewer; empty hides it
   if ("camera_info" in body) changes.camera_info = String(body.camera_info).trim().slice(0, 200);
+  // placeholder: the tiny blurry preview (only a small image data: address is accepted)
+  if ("placeholder" in body) changes.placeholder = cleanPlaceholder(body.placeholder);
 
   const columns = Object.keys(changes);
   if (columns.length === 0) return Response.json({ error: "Nothing to change." }, { status: 400 });

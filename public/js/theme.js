@@ -44,7 +44,15 @@
     button.dataset.showing = current();
   }
 
+  // The phone's browser bar takes the page's background color.
+  function updateBarColor() {
+    document.querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", current() === "dark" ? "#0c0a09" : "#fafaf9");
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    updateBarColor();
+    darkQuery.addEventListener("change", updateBarColor);
     const button = document.getElementById("theme-toggle");
     if (!button) return;
     button.hidden = false; // only shown when this script runs
@@ -59,10 +67,31 @@
         localStorage.setItem(KEY, next);
       } catch {}
       updateButton(button);
+      updateBarColor();
     });
     // If the device switches (for example at sunset) and no choice was saved, follow it.
     darkQuery.addEventListener("change", () => updateButton(button));
   });
+})();
+
+// ---------- Photos fade in over their blurry preview ----------
+// Photos with class="fade" start see-through (style.css, "Blurry previews") and
+// fade in once loaded. This listener is set up before any photo can finish, so
+// none is missed. A photo that fails to load stays hidden, and its blurry
+// preview stays in place instead of a broken-image icon.
+(function () {
+  const mark = (img) => {
+    if (img.complete && img.naturalWidth) img.classList.add("is-loaded");
+  };
+  document.addEventListener("load", (event) => {
+    if (event.target.classList?.contains("fade")) event.target.classList.add("is-loaded");
+  }, true);
+  document.addEventListener("error", (event) => {
+    if (event.target.classList?.contains("fade")) event.target.classList.add("is-broken");
+  }, true);
+  // Safety net: anything already finished by then.
+  document.addEventListener("DOMContentLoaded", () => document.querySelectorAll("img.fade").forEach(mark));
+  window.addEventListener("pageshow", () => document.querySelectorAll("img.fade").forEach(mark));
 })();
 
 // ---------- Focus outlines only for keyboard users ----------

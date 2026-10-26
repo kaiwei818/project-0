@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The color of the phone's browser bar; js/theme.js keeps it in step with dark mode. -->
+  <meta name="theme-color" content="#fafaf9">
   <!-- Text in data-site="..." elements and the title come from lib/site.js (see functions/_middleware.js). -->
   <title data-page="About"></title>
   <!-- Link-preview tags, filled in by functions/about.js -->
@@ -15,6 +17,8 @@
   <meta property="og:image" content="">
   <meta name="twitter:card" content="summary">
   <link rel="canonical" href="">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
   <script src="/js/menu.js" defer></script>
@@ -22,6 +26,7 @@
   <script src="/js/protect.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
     <button type="button" class="menu-button" id="menu-button" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false">
@@ -35,7 +40,7 @@
 
   <!-- functions/about.js fills in the portrait, bio, and contact details
        from what you saved in the admin area. -->
-  <main class="about">
+  <main id="main" class="about">
     <div class="about-portrait" id="about-portrait"></div>
     <div class="about-text">
       <h1>About <span data-site="owner"></span></h1>

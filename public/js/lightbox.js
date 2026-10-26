@@ -2,8 +2,16 @@
 //
 // Open it by tapping a photo. Then:
 //   next / previous   swipe left or right, the arrow keys, or the < > buttons
+//   first / last      the Home and End keys
 //   close             swipe down, Escape, the × button, or the phone's Back button
 //   zoom              pinch with two fingers; then one finger looks around
+//
+// Each photo has its own address (/sets/kyoto?photo=3), so it can be shared,
+// and a reload or a shared link opens that photo. Back closes the viewer.
+//
+// In browsers that can (Chrome, Edge, Safari 18), the photo grows out of its
+// place in the grid when opened and shrinks back into it when closed (a "view
+// transition"). Elsewhere, and for visitors who asked for less motion, it fades.
 //
 // It uses the built-in <dialog> element, which gives us for free: showing on top
 // of everything, closing on Escape, and keeping keyboard focus inside while open.
@@ -14,7 +22,9 @@ const SWIPE_DISTANCE = 50; // pixels a finger must travel to count as a swipe
 
 // downloadUrl(photo): optional; returns a download address for this photo, or ""
 // when it cannot be downloaded (no license code entered, or no clean copy).
-export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
+// thumbFor(index): optional; the grid button of that photo, for the grow and
+// shrink effect and to put keyboard focus back on the photo last viewed.
+export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () => null } = {}) {
   const dialog = document.getElementById("lightbox");
   const img = document.getElementById("lightbox-img");
   const info = document.getElementById("lightbox-info");
@@ -25,18 +35,28 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   const prevButton = document.getElementById("lightbox-prev");
   const nextButton = document.getElementById("lightbox-next");
   const status = document.getElementById("lightbox-status");
+  const problem = document.getElementById("lightbox-problem");
+  const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
   let index = 0;
+  let direction = 1; // which way the visitor is moving through the set
   let returnFocusTo = null;
+  let cleanedUp = true;
 
   function show(newIndex) {
+    const previous = index;
     index = (newIndex + photos.length) % photos.length; // wrap around at the ends
+    if (index !== previous) direction = newIndex < previous ? -1 : 1;
     const photo = photos[index];
 
     // Show the grid picture at once (already downloaded, so instant), then swap
-    // in the large version as soon as it arrives. No blank screen while waiting.
+    // in the large version as soon as it arrives. No blank screen while waiting:
+    // underneath is the photo's tiny blurry preview (see style.css).
     img.removeAttribute("srcset");
     img.src = photo.gridSrc || imageUrl(photo.thumb_key);
     img.alt = photo.alt_text;
+    if (photo.placeholder) img.style.setProperty("--ph", `url("${photo.placeholder}")`);
+    else img.style.removeProperty("--ph");
+    setState("loading");
     // Its final size from the start (see style.css), so it does not grow when
     // the large file replaces the smaller grid one.
     if (photo.width && photo.height) {
@@ -50,9 +70,12 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     large.onload = () => {
       if (photos[index] !== photo) return; // moved on to another photo meanwhile
       img.src = large.currentSrc || large.src;
-      // Only now start on the neighbors, so they don't slow this one down.
-      preload(index + 1);
-      preload(index - 1);
+      setState("");
+      // Only now start on the next one, so it does not slow this one down.
+      preload(index + direction);
+    };
+    large.onerror = () => {
+      if (photos[index] === photo) setState("error");
     };
 
     caption.textContent = photo.caption;
@@ -71,11 +94,28 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     status.textContent = dialog.open
       ? `Photo ${index + 1} of ${photos.length}${photo.alt_text ? `: ${photo.alt_text}` : ""}`
       : "";
+    if (dialog.open) history.replaceState({ lightbox: true }, "", photoAddress(index));
   }
 
-  // Start downloading the neighbors, so swiping to them feels instant.
+  // "loading": a thin line moves along the top after a moment (style.css).
+  // "error": the large file failed; the smaller one stays, with a note.
+  function setState(state) {
+    dialog.dataset.state = state;
+    problem.hidden = state !== "error";
+  }
+  img.addEventListener("error", () => setState("error"));
+  problem.querySelector("button").addEventListener("click", () => show(index));
+
+  // Start downloading the next photo (in the direction the visitor is going),
+  // so moving on feels instant. Not when the visitor's device asks to save data.
   function preload(i) {
+    const connection = navigator.connection;
+    if (photos.length < 2 || connection?.saveData || /2g/.test(connection?.effectiveType || "")) return;
     loadLarge(photos[(i + photos.length) % photos.length]);
+  }
+
+  function photoAddress(i) {
+    return `${location.pathname}?photo=${i + 1}`;
   }
 
   // The viewer fills the screen, so "sizes" is the screen width. The browser
@@ -88,43 +128,119 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
     return large;
   }
 
-  function open(startIndex, opener) {
+  // instant: no grow effect (used when the page opens straight on a photo).
+  function open(startIndex, opener, { instant = false } = {}) {
+    if (dialog.open) return show(startIndex);
     returnFocusTo = opener;
+    index = startIndex;
     show(startIndex);
-    dialog.showModal();
-    document.body.classList.add("no-scroll");
     // Add a history entry, so the phone's Back button closes the viewer
     // instead of leaving the page.
-    history.pushState({ lightbox: true }, "");
+    history.pushState({ lightbox: true }, "", photoAddress(index));
+    morph("open", () => {
+      dialog.showModal();
+      document.body.classList.add("no-scroll");
+      cleanedUp = false;
+      status.textContent = "";
+    }, instant);
   }
 
-  // Every way of closing ends up here (through "popstate" or the dialog's
-  // own "close" event), so the cleanup happens exactly once.
-  function onClosed() {
+  // Every way of closing ends up here, so the cleanup happens exactly once:
+  // back where the visitor was, on the photo they looked at last.
+  function cleanUp() {
+    if (cleanedUp) return;
+    cleanedUp = true;
     document.body.classList.remove("no-scroll");
-    returnFocusTo?.focus(); // put keyboard users back where they were
+    const thumb = thumbFor(index);
+    thumb?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    (thumb || returnFocusTo)?.focus({ preventScroll: true }); // put keyboard users back
+    setState("");
   }
 
+  function closeNow() {
+    if (!dialog.open) return cleanUp();
+    // While the viewer still covers the page, bring the photo's place in the
+    // grid into view, so it can shrink back into it.
+    thumbFor(index)?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    morph("close", () => {
+      dialog.close();
+      cleanUp();
+    });
+  }
+
+  // × button, swipe down, Escape: go Back, which closes the viewer (popstate),
+  // so the address bar and the Back button stay right.
   function close() {
-    if (history.state?.lightbox) history.back(); // triggers popstate below
-    else if (dialog.open) dialog.close();
+    if (history.state?.lightbox) history.back();
+    else closeNow();
   }
 
   window.addEventListener("popstate", () => {
-    if (dialog.open) dialog.close();
+    const wanted = Number(new URLSearchParams(location.search).get("photo")) - 1;
+    if (history.state?.lightbox && photos[wanted]) {
+      // Forward again onto a photo address: show that photo.
+      if (dialog.open) show(wanted);
+      else {
+        index = wanted;
+        show(wanted);
+        morph("open", () => { dialog.showModal(); document.body.classList.add("no-scroll"); cleanedUp = false; }, false);
+      }
+    } else if (dialog.open) closeNow();
   });
+  // Escape: close the same way as the × button (with the shrink effect).
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    close();
+  });
+  // The browser may still close the dialog itself (for example a second Escape).
   dialog.addEventListener("close", () => {
-    if (history.state?.lightbox) history.back(); // closed with Escape
-    onClosed();
+    if (history.state?.lightbox) history.back();
+    cleanUp();
   });
+
+  // ---------- Grow and shrink ----------
+  // The picture in the grid and the picture in the viewer get the same
+  // "view-transition-name" for a moment; the browser then animates one into the
+  // other. update() makes the actual change (open or close the dialog).
+  function morph(kind, update, instant = false) {
+    const thumbImg = thumbFor(index)?.querySelector("img");
+    const box = thumbImg?.getBoundingClientRect();
+    const onScreen = box && box.bottom > 0 && box.top < innerHeight && box.width > 0;
+    if (instant || !document.startViewTransition || lessMotion.matches || !onScreen) return update();
+    const root = document.documentElement;
+    const [from, to] = kind === "open" ? [thumbImg, img] : [img, thumbImg];
+    root.classList.add("photo-transition");
+    from.style.viewTransitionName = "photo";
+    let transition;
+    try {
+      transition = document.startViewTransition(async () => {
+        from.style.viewTransitionName = "";
+        update();
+        to.style.viewTransitionName = "photo";
+        // Wait (briefly) for the picture to be ready, so it does not grow empty.
+        if (kind === "open") await Promise.race([img.decode().catch(() => {}), new Promise((r) => setTimeout(r, 150))]);
+      });
+    } catch {
+      from.style.viewTransitionName = "";
+      root.classList.remove("photo-transition");
+      return update();
+    }
+    transition.finished.finally(() => {
+      from.style.viewTransitionName = to.style.viewTransitionName = "";
+      root.classList.remove("photo-transition");
+    });
+  }
 
   document.getElementById("lightbox-close").addEventListener("click", close);
   prevButton.addEventListener("click", () => show(index - 1));
   nextButton.addEventListener("click", () => show(index + 1));
 
   dialog.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowLeft") show(index - 1);
-    if (event.key === "ArrowRight") show(index + 1);
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const to = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: photos.length - 1 }[event.key];
+    if (to === undefined) return;
+    event.preventDefault();
+    show(to);
   });
 
   // Tapping the dark area around the photo closes the viewer.
@@ -136,7 +252,6 @@ export function createLightbox(photos, { downloadUrl = () => "" } = {}) {
   // While a finger moves sideways, the photo moves with it. Not with a mouse,
   // not while zoomed in, and not for visitors who asked for less motion.
   const fingers = new Set(); // pointers touching the screen now
-  const lessMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const zoomed = () => (window.visualViewport?.scale || 1) > 1.01;
   let start = null;
 

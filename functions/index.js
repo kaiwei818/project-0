@@ -61,6 +61,15 @@ export async function onRequestGet({ request, env }) {
     title: current ? current.name : "",
     url: current ? `${url.origin}/?category=${encodeURIComponent(current.slug)}` : url.origin + "/",
     image: (hero?.set || sets[0])?.cover_thumb_key ? `${url.origin}/img/${(hero?.set || sets[0]).cover_thumb_key}` : "",
+    imageSize: thumbSize(hero?.set || sets[0]),
+    imageAlt: (hero?.set || sets[0])?.title || "",
     structuredData: current ? null : homeData(url.origin),
   });
+}
+
+// The cover's thumbnail is 1200 px on its long edge (or the photo's own size).
+function thumbSize(set) {
+  if (!set?.cover_width || !set?.cover_height) return null;
+  const scale = Math.min(1, 1200 / Math.max(set.cover_width, set.cover_height));
+  return { width: set.cover_width * scale, height: set.cover_height * scale };
 }

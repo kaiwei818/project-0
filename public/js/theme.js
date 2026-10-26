@@ -50,8 +50,8 @@
       ?.setAttribute("content", current() === "dark" ? "#0c0a09" : "#fafaf9");
   }
 
+  updateBarColor(); // the tag comes before this script, so set it before anything is drawn
   document.addEventListener("DOMContentLoaded", () => {
-    updateBarColor();
     darkQuery.addEventListener("change", updateBarColor);
     const button = document.getElementById("theme-toggle");
     if (!button) return;

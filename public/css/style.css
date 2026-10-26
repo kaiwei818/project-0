@@ -1488,6 +1488,8 @@ main, .site-header, .site-footer {
   padding-left: var(--gutter);
   padding-right: var(--gutter);
 }
+/* The narrow login box keeps its own small edges. */
+main.login { padding-left: 16px; padding-right: 16px; }
 
 /* Set page: a larger title, one quiet line of facts under it. */
 .set-heading h1 {
@@ -1552,7 +1554,8 @@ main, .site-header, .site-footer {
   .set-card, .hero, .photo-grid img, .thumb-button, .placeholder,
   .share-menu, .share-button, .menu-action, .button-link, .lightbox-problem,
   .license-panel, input, textarea, .skip-link,
-  button:not(.menu-button, .menu-close, .lightbox-button, .share-button-icon, .theme-toggle:not(.menu-action)) {
+  button:not(.menu-button, .menu-close, .lightbox-button, .share-button-icon, .theme-toggle:not(.menu-action),
+    .admin-tags button, .lightbox-problem button) {
     corner-shape: squircle;
   }
 }

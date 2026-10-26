@@ -83,7 +83,8 @@ export async function onRequestGet({ request, env, params }) {
   };
 
   return withPageMeta(filled, {
-    title: shared ? `${set.title}, photo ${photoNumber}` : set.title,
+    title: set.title,
+    shareTitle: shared ? `${set.title}, photo ${photoNumber}` : "",
     description: shared ? shared.caption || shared.alt_text || set.description : set.description,
     url: url.origin + url.pathname,
     shareUrl: shared ? `${url.origin}${url.pathname}?photo=${photoNumber}` : "",

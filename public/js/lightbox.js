@@ -41,6 +41,10 @@ export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () =
   let direction = 1; // which way the visitor is moving through the set
   let returnFocusTo = null;
   let cleanedUp = true;
+  // What the visitor last asked for (open or closed). Set at once, while the
+  // grow/shrink effect still runs, so quick Back/Forward presses end up right.
+  let wantOpen = false;
+  const closeButton = document.getElementById("lightbox-close");
 
   function show(newIndex) {
     const previous = index;
@@ -94,13 +98,29 @@ export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () =
     status.textContent = dialog.open
       ? `Photo ${index + 1} of ${photos.length}${photo.alt_text ? `: ${photo.alt_text}` : ""}`
       : "";
-    if (dialog.open) history.replaceState({ lightbox: true }, "", photoAddress(index));
+    if (wantOpen) rememberAddress();
+  }
+
+  // The address follows the photo, a moment after the last change: Safari
+  // refuses more than 100 address changes in a short time.
+  let addressTimer;
+  function rememberAddress() {
+    clearTimeout(addressTimer);
+    addressTimer = setTimeout(() => {
+      if (!wantOpen || !history.state?.lightbox) return;
+      try {
+        history.replaceState({ lightbox: true }, "", photoAddress(index));
+      } catch {} // over the browser's limit: the address just stays a little behind
+    }, 250);
   }
 
   // "loading": a thin line moves along the top after a moment (style.css).
   // "error": the large file failed; the smaller one stays, with a note.
   function setState(state) {
     dialog.dataset.state = state;
+    // Keyboard focus on "Try again" must not vanish with the note (it would
+    // land outside the viewer, and the arrow keys would stop working).
+    if (state !== "error" && problem.contains(document.activeElement)) closeButton.focus();
     problem.hidden = state !== "error";
   }
   img.addEventListener("error", () => setState("error"));
@@ -129,15 +149,30 @@ export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () =
   }
 
   // instant: no grow effect (used when the page opens straight on a photo).
-  function open(startIndex, opener, { instant = false } = {}) {
-    if (dialog.open) return show(startIndex);
+  // push: false when the current history entry already is this viewer's (a
+  // reload while a photo was open), so no extra Back step is added.
+  function open(startIndex, opener, { instant = false, push = true } = {}) {
+    if (wantOpen) return show(startIndex);
     returnFocusTo = opener;
     index = startIndex;
     show(startIndex);
+    wantOpen = true;
+    // The page is scrolled by us when the viewer closes (to the last photo),
+    // not by the browser's memory of where it was.
+    history.scrollRestoration = "manual";
     // Add a history entry, so the phone's Back button closes the viewer
     // instead of leaving the page.
-    history.pushState({ lightbox: true }, "", photoAddress(index));
+    if (push) {
+      try {
+        history.pushState({ lightbox: true }, "", photoAddress(index));
+      } catch {}
+    }
+    showDialog(instant);
+  }
+
+  function showDialog(instant) {
     morph("open", () => {
+      if (!wantOpen || dialog.open) return; // closed again meanwhile
       dialog.showModal();
       document.body.classList.add("no-scroll");
       cleanedUp = false;
@@ -155,17 +190,22 @@ export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () =
     thumb?.scrollIntoView({ block: "nearest", behavior: "instant" });
     (thumb || returnFocusTo)?.focus({ preventScroll: true }); // put keyboard users back
     setState("");
+    history.scrollRestoration = "auto";
   }
 
-  function closeNow() {
+  // instant: no shrink effect (the browser already animated a back swipe).
+  function closeNow(instant = false) {
+    wantOpen = false;
+    clearTimeout(addressTimer);
     if (!dialog.open) return cleanUp();
     // While the viewer still covers the page, bring the photo's place in the
     // grid into view, so it can shrink back into it.
     thumbFor(index)?.scrollIntoView({ block: "nearest", behavior: "instant" });
     morph("close", () => {
+      if (wantOpen) return; // opened again meanwhile (a quick Forward)
       dialog.close();
       cleanUp();
-    });
+    }, instant);
   }
 
   // × button, swipe down, Escape: go Back, which closes the viewer (popstate),
@@ -175,17 +215,19 @@ export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () =
     else closeNow();
   }
 
-  window.addEventListener("popstate", () => {
+  window.addEventListener("popstate", (event) => {
     const wanted = Number(new URLSearchParams(location.search).get("photo")) - 1;
     if (history.state?.lightbox && photos[wanted]) {
       // Forward again onto a photo address: show that photo.
-      if (dialog.open) show(wanted);
+      if (wantOpen) show(wanted);
       else {
         index = wanted;
         show(wanted);
-        morph("open", () => { dialog.showModal(); document.body.classList.add("no-scroll"); cleanedUp = false; }, false);
+        wantOpen = true;
+        history.scrollRestoration = "manual";
+        showDialog(event.hasUAVisualTransition);
       }
-    } else if (dialog.open) closeNow();
+    } else if (wantOpen) closeNow(event.hasUAVisualTransition);
   });
   // Escape: close the same way as the × button (with the shrink effect).
   dialog.addEventListener("cancel", (event) => {
@@ -194,7 +236,10 @@ export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () =
   });
   // The browser may still close the dialog itself (for example a second Escape).
   dialog.addEventListener("close", () => {
-    if (history.state?.lightbox) history.back();
+    if (wantOpen) {
+      wantOpen = false;
+      if (history.state?.lightbox) history.back();
+    }
     cleanUp();
   });
 
@@ -231,7 +276,7 @@ export function createLightbox(photos, { downloadUrl = () => "", thumbFor = () =
     });
   }
 
-  document.getElementById("lightbox-close").addEventListener("click", close);
+  closeButton.addEventListener("click", close);
   prevButton.addEventListener("click", () => show(index - 1));
   nextButton.addEventListener("click", () => show(index + 1));
 

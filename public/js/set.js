@@ -169,10 +169,13 @@ for (const button of thumbs) {
 // A link to one photo (/sets/kyoto?photo=3, from sharing or a reload) opens it.
 // The address first goes back to the plain set page, so Back then closes the
 // viewer and stays on the set, instead of leaving the site.
+// After a reload with a photo open, the history entry is already the viewer's
+// own: reopen it without adding another.
 const shared = Number(new URLSearchParams(location.search).get("photo")) - 1;
 if (photos[shared]) {
-  history.replaceState(null, "", location.pathname);
-  lightbox.open(shared, thumbs[shared], { instant: true });
+  const reloaded = Boolean(history.state?.lightbox);
+  if (!reloaded) history.replaceState(null, "", location.pathname);
+  lightbox.open(shared, thumbs[shared], { instant: true, push: !reloaded });
 }
 
 // Right-click and long-press saving are blocked for the whole site in protect.js.

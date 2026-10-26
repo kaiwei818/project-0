@@ -29,7 +29,12 @@ export async function onRequestGet({ request, env, params, waitUntil }) {
   const cache = caches.default;
   const cacheKey = new Request(new URL(request.url).toString(), { method: "GET" });
   const cached = await cache.match(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    // Browsers may still keep it for a year (the edge copy says one day).
+    const response = new Response(cached.body, cached);
+    response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    return response;
+  }
 
   const object = await env.BUCKET.get(key);
 
@@ -49,7 +54,11 @@ export async function onRequestGet({ request, env, params, waitUntil }) {
   headers.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox");
 
   const response = new Response(object.body, { headers });
-  waitUntil(cache.put(cacheKey, response.clone()));
+  // The edge copy expires after a day, so a photo you delete stops being
+  // served from the cache by then (the file itself is gone at once).
+  const edgeCopy = new Response(response.clone().body, response);
+  edgeCopy.headers.set("Cache-Control", "public, max-age=86400");
+  waitUntil(cache.put(cacheKey, edgeCopy));
   return response;
 }
 

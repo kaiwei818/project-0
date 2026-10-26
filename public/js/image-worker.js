@@ -8,6 +8,7 @@
 //   display 3000 px on the long edge   (the full-screen viewer, on every screen)
 //   download 3000 px JPEG, NO watermark, only if you ticked "clean copy"; kept
 //            private and given out only with a license code
+//   placeholder  an 8 px color grid for the blurry preview, as text (js/placeholder.js)
 // Every public size gets the watermark, in the style you picked:
 //   full   repeated diagonally across the whole photo (strong on the viewer
 //          size, lighter on the grid sizes)
@@ -33,6 +34,7 @@
 // Before that, we read just the camera details we want to show (exif.js).
 
 import { readCameraInfo } from "./exif.js";
+import { makePlaceholder } from "./placeholder.js";
 import { drawWatermark } from "./watermark.js";
 
 const MB = 1024 * 1024;
@@ -76,6 +78,8 @@ async function processPhoto(file, watermark, watermarkStyle, keepClean) {
     canvases.small = shrink(canvases.thumb, SIZES.small.edge);
 
     const blobs = {};
+    // Made before the watermark: at 8 px it would only be a smudge anyway.
+    const placeholder = await makePlaceholder(canvases.small, canvases.small.width, canvases.small.height).catch(() => "");
 
     // JPEG for the download: every program can open it. High quality, since
     // this is the copy people license.
@@ -100,7 +104,7 @@ async function processPhoto(file, watermark, watermarkStyle, keepClean) {
       ({ width, height } = blobs.display.fallback);
       blobs.display = blobs.display.blob;
     }
-    return { ...blobs, width, height };
+    return { ...blobs, width, height, placeholder };
   } finally {
     original.close(); // safe to call twice
     Object.values(canvases).forEach(release);

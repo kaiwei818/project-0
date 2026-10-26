@@ -13,6 +13,7 @@
 // the server adds each photo after the last one it received.
 
 import { readCaptureKey } from "./exif.js";
+import { makePlaceholder } from "./placeholder.js";
 import { currentIds, makeSortable, moveItem } from "./sortable.js";
 
 let parallel = 2;
@@ -266,6 +267,36 @@ function renderExisting() {
   existing.replaceChildren(...set.photos.map(createPhotoCard));
   $("existing-empty").hidden = set.photos.length > 0;
   $("existing-help").hidden = set.photos.length === 0;
+  addMissingPlaceholders();
+}
+
+// Photos uploaded before blurry previews existed (migrations/0010) get one now,
+// made from their small grid picture, one at a time in the background.
+let fillingPlaceholders = false;
+async function addMissingPlaceholders() {
+  if (fillingPlaceholders || typeof OffscreenCanvas === "undefined") return;
+  fillingPlaceholders = true;
+  try {
+    for (const photo of set.photos.filter((p) => !p.placeholder)) {
+      const picture = new Image();
+      picture.src = `/img/${photo.thumb_key}`;
+      try {
+        await picture.decode();
+        const placeholder = await makePlaceholder(picture, picture.naturalWidth, picture.naturalHeight);
+        if (!placeholder) continue;
+        const response = await fetch(`/api/admin/photos/${photo.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ placeholder }),
+        });
+        if (response.ok) photo.placeholder = placeholder;
+      } catch (err) {
+        console.warn(`No blurry preview for photo ${photo.id}:`, err);
+      }
+    }
+  } finally {
+    fillingPlaceholders = false;
+  }
 }
 
 function createPhotoCard(photo, index) {
@@ -613,7 +644,7 @@ function pumpUploads() {
 }
 
 async function uploadItem(item) {
-  const { width, height, cameraInfo } = item.result;
+  const { width, height, cameraInfo, placeholder } = item.result;
   const form = new FormData();
   form.append("set_id", setId);
   form.append("width", width);
@@ -622,6 +653,7 @@ async function uploadItem(item) {
   // tells a blind visitor nothing, and goes stale when the set is renamed.
   form.append("alt_text", "");
   form.append("camera_info", cameraInfo || "");
+  form.append("placeholder", placeholder || "");
   const facts = await item.factsReady; // name, fingerprint, capture time (for duplicate warnings later)
   form.append("original_name", item.file.name);
   form.append("original_hash", facts?.hash || "");

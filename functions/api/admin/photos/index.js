@@ -1,6 +1,7 @@
 // POST /api/admin/photos
 // Receives one already-shrunk photo from the upload page, as a form with:
-//   set_id, width, height, alt_text, camera_info,
+//   set_id, width, height, alt_text, camera_info, placeholder (the tiny blurry
+//   preview, as a data: address; see js/placeholder.js),
 //   original_name, original_hash, taken_at (facts about the original file, for
 //   duplicate warnings; see migrations/0007),
 //   small, thumb, display (the image files; "medium" is only sent by
@@ -13,6 +14,7 @@
 // We still check everything: never trust what a browser sends.
 
 import { logActivity, quoted } from "../../../../lib/activity.js";
+import { cleanPlaceholder } from "../../../../lib/render.js";
 
 // 15 MB per file. A 3000 px photo at quality 0.9 is usually 1 to 4 MB, but Safari
 // saves JPEG (larger than WebP) and very detailed photos can go higher.
@@ -56,6 +58,7 @@ export async function onRequestPost(context) {
   const originalName = String(form.get("original_name") || "").trim().slice(0, 255);
   const originalHash = /^[0-9a-f]{64}$/.test(form.get("original_hash") || "") ? form.get("original_hash") : "";
   const takenAt = String(form.get("taken_at") || "").trim().slice(0, 120);
+  const placeholder = cleanPlaceholder(form.get("placeholder"));
 
   if (!Number.isInteger(width) || !Number.isInteger(height) ||
       width < 1 || height < 1 || width > 10000 || height > 10000) {
@@ -91,12 +94,12 @@ export async function onRequestPost(context) {
     const photo = await env.DB.prepare(
       `INSERT INTO photos (set_id, small_key, thumb_key, medium_key, display_key, download_key,
                            width, height, alt_text, camera_info, size_bytes,
-                           original_name, original_hash, taken_at, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                           original_name, original_hash, taken_at, placeholder, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM photos WHERE set_id = ?))
        RETURNING id, thumb_key, display_key, width, height, alt_text, camera_info, size_bytes`
     ).bind(setId, keys.small ?? null, keys.thumb, keys.medium ?? null, keys.display, keys.download ?? null,
-           width, height, altText, cameraInfo, totalBytes, originalName, originalHash, takenAt, setId).first();
+           width, height, altText, cameraInfo, totalBytes, originalName, originalHash, takenAt, placeholder, setId).first();
     const name = originalName ? ` (${originalName})` : "";
     const clean = keys.download ? ", with a clean copy" : "";
     await logActivity(context, "upload", `Uploaded photo #${photo.id}${name} to ${quoted(set.title)}${clean}`, setId);

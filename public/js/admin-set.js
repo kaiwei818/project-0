@@ -267,7 +267,51 @@ function renderExisting() {
   existing.replaceChildren(...set.photos.map(createPhotoCard));
   $("existing-empty").hidden = set.photos.length > 0;
   $("existing-help").hidden = set.photos.length === 0;
+  $("order-tools").hidden = set.photos.length < 2;
   addMissingPlaceholders();
+}
+
+// ---------- Shuffle ----------
+// A random new order, saved at once. "Undo shuffle" puts back the order from
+// before the first shuffle, until you move a photo by hand.
+let orderBeforeShuffle = null;
+
+$("shuffle-photos").addEventListener("click", async () => {
+  if (set.photos.length < 2) return;
+  const before = set.photos.map((p) => p.id);
+  orderBeforeShuffle ??= before;
+  // The home page shows the first photo as the cover unless you picked one
+  // with ★. Keep today's cover, so shuffling does not change the home page.
+  if (!set.cover_photo_id) await setCover(set.photos[0]);
+  let shuffled;
+  do shuffled = shuffle([...set.photos]);
+  while (set.photos.length > 2 && shuffled.every((p, i) => p.id === before[i])); // always a new order
+  set.photos = shuffled;
+  await saveOrder("Shuffled and saved.");
+  $("undo-order").hidden = false;
+});
+
+$("undo-order").addEventListener("click", async () => {
+  if (!orderBeforeShuffle) return;
+  const ids = orderBeforeShuffle;
+  set.photos.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  orderBeforeShuffle = null;
+  $("undo-order").hidden = true;
+  await saveOrder("Back to the order before shuffling.");
+});
+
+async function saveOrder(message) {
+  renderExisting(); // the cards in the new order; savePhotoOrder reads them
+  if (await savePhotoOrder({ keepUndo: true })) flash($("order-status"), message);
+}
+
+// Fisher-Yates with the browser's real random numbers: every order equally likely.
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
 }
 
 // Photos uploaded before blurry previews existed (migrations/0010) get one now,
@@ -419,7 +463,12 @@ async function movePhoto(item, direction, arrow) {
   [...(card?.querySelectorAll(".icon-button") ?? [])].find((b) => b.textContent === arrow)?.focus();
 }
 
-async function savePhotoOrder() {
+async function savePhotoOrder({ keepUndo = false } = {}) {
+  if (!keepUndo) {
+    // Moved by hand: the shuffle can no longer be undone.
+    orderBeforeShuffle = null;
+    $("undo-order").hidden = true;
+  }
   const ids = currentIds(existing);
   const response = await fetch(`/api/admin/sets/${setId}/reorder`, {
     method: "PATCH",
@@ -428,11 +477,13 @@ async function savePhotoOrder() {
   });
   if (!response.ok) {
     alert("Could not save the new order. The page will reload the photos.");
-    return loadSet();
+    loadSet();
+    return false;
   }
   set.photos.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   // Redraw so the photo numbers in the labels and the default cover stay right.
   renderExisting();
+  return true;
 }
 
 async function setCover(photo) {

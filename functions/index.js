@@ -12,7 +12,6 @@ import { withPageMeta } from "../lib/meta.js";
 import { homeData } from "../lib/structured.js";
 import { categoriesInUse, publishedSets } from "../lib/queries.js";
 import { escapeHtml, heroHtml, setCardHtml } from "../lib/render.js";
-import { SITE } from "../lib/site.js";
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -36,11 +35,10 @@ export async function onRequestGet({ request, env }) {
   const filled = new HTMLRewriter()
     .on("#hero", {
       element(el) {
-        if (hero) el.setInnerContent(heroHtml(hero.set, SITE.description, hero.label), { html: true });
+        if (hero) el.setInnerContent(heroHtml(hero.set, hero.label), { html: true });
         else el.remove();
       },
     })
-    .on("#site-tagline", { element(el) { if (hero) el.remove(); } })
     .on("#set-grid", { element(el) { el.setInnerContent(sets.map(setCardHtml).join(""), { html: true }); } })
     .on("#category-nav", {
       element(el) {

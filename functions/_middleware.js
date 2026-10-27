@@ -4,8 +4,8 @@
 //      main domain, with a "moved permanently" (301) redirect (lib/site.js)
 //   1. adds the security headers (lib/security.js)
 //   2. on HTML pages, fills in the site name, owner, and year (lib/site.js)
-//   3. on public pages, fills in the ☰ menu and the "Get in touch" footer
-//      (lib/chrome.js), and tells browsers they may load the next page early
+//   3. on public pages, fills in the header links, the ☰ menu, and the
+//      "Get in touch" footer (lib/chrome.js), and tells browsers they may load the next page early
 //      (the Speculation-Rules header, see public/speculation-rules.json)
 //   4. on HTML pages, gives every style and script a versioned address, so
 //      browsers never mix a new page with an old saved copy of the CSS
@@ -18,7 +18,7 @@
 // of visitors; one visit to a set is roughly 10 to 40 requests.
 
 import { ASSET_VERSION } from "../lib/asset-version.js";
-import { footerHtml, menuHtml } from "../lib/chrome.js";
+import { footerHtml, menuHtml, navHtml } from "../lib/chrome.js";
 import { CONTACT_KEYS } from "../lib/contact.js";
 import { categoriesInUse } from "../lib/queries.js";
 import { addSecurityHeaders } from "../lib/security.js";
@@ -87,6 +87,7 @@ export async function onRequest({ request, env, next }) {
   }
   if (chrome) {
     rewriter = rewriter
+      .on("#site-nav", { element(el) { el.setInnerContent(chrome.nav, { html: true }); } })
       .on("#site-menu", { element(el) { el.setInnerContent(chrome.menu, { html: true }); } })
       .on("#contact", { element(el) { el.setInnerContent(chrome.footer, { html: true }); } });
   }
@@ -115,9 +116,10 @@ export async function onRequest({ request, env, next }) {
     .transform(response);
 }
 
-// The sets, categories, and contact details for the menu and footer. If the
+// The header links, and the sets, categories, and contact details for the menu and footer. If the
 // database cannot be reached, the page still works, with a shorter menu.
 async function loadChrome(env, url) {
+  const nav = navHtml({ path: url.pathname, category: url.searchParams.get("category") || "" });
   try {
     const [{ results: sets }, categories, about] = await Promise.all([
       env.DB.prepare(`SELECT slug, title FROM sets s WHERE ${isPublicSql()} ORDER BY sort_order, id`).all(),
@@ -125,12 +127,13 @@ async function loadChrome(env, url) {
       getSettings(env, CONTACT_KEYS),
     ]);
     return {
+      nav,
       menu: menuHtml({ sets, categories, path: url.pathname, category: url.searchParams.get("category") || "" }),
       footer: footerHtml(about),
     };
   } catch (err) {
     console.error("Could not load the menu:", err);
-    return { menu: menuHtml({ sets: [], categories: [], path: url.pathname }), footer: footerHtml({}) };
+    return { nav, menu: menuHtml({ sets: [], categories: [], path: url.pathname }), footer: footerHtml({}) };
   }
 }
 

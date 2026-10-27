@@ -1,7 +1,7 @@
 // Light and dark mode, and (at the end) focus outlines only for keyboard users.
 //
 // By default the site follows the visitor's device setting. The sun/moon
-// button in the header overrides it, and the choice is remembered in this
+// buttons (in the header, and in the menu) override it, and the choice is remembered in this
 // browser. The choice is stored as data-theme="light" or "dark" on <html>;
 // style.css swaps its colors based on that.
 //
@@ -47,30 +47,32 @@
   // The phone's browser bar takes the page's background color.
   function updateBarColor() {
     document.querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", current() === "dark" ? "#0c0a09" : "#fafaf9");
+      ?.setAttribute("content", current() === "dark" ? "#111111" : "#ffffff");
   }
 
   updateBarColor(); // the tag comes before this script, so set it before anything is drawn
   document.addEventListener("DOMContentLoaded", () => {
     darkQuery.addEventListener("change", updateBarColor);
-    const button = document.getElementById("theme-toggle");
-    if (!button) return;
-    button.hidden = false; // only shown when this script runs
-    updateButton(button);
-    button.addEventListener("click", () => {
-      const next = current() === "dark" ? "light" : "dark";
-      // Every color changes at once, without the gentle hover fades (style.css).
-      root.classList.add("theme-switching");
-      requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
-      root.dataset.theme = next;
-      try {
-        localStorage.setItem(KEY, next);
-      } catch {}
-      updateButton(button);
-      updateBarColor();
-    });
+    const buttons = document.querySelectorAll("[data-theme-toggle]");
+    const updateAll = () => buttons.forEach(updateButton);
+    for (const button of buttons) {
+      button.hidden = false; // only shown when this script runs
+      button.addEventListener("click", () => {
+        const next = current() === "dark" ? "light" : "dark";
+        // Every color changes at once, without the gentle hover fades (style.css).
+        root.classList.add("theme-switching");
+        requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
+        root.dataset.theme = next;
+        try {
+          localStorage.setItem(KEY, next);
+        } catch {}
+        updateAll();
+        updateBarColor();
+      });
+    }
+    updateAll();
     // If the device switches (for example at sunset) and no choice was saved, follow it.
-    darkQuery.addEventListener("change", () => updateButton(button));
+    darkQuery.addEventListener("change", updateAll);
   });
 })();
 

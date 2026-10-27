@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- The color of the phone's browser bar; js/theme.js keeps it in step with dark mode. -->
-  <meta name="theme-color" content="#fafaf9">
+  <meta name="theme-color" content="#ffffff">
   <!-- Text in data-site="..." elements and the title come from lib/site.js (see functions/_middleware.js). -->
   <title data-page=""></title>
   <!-- Link-preview tags, filled in by functions/sets/[slug].js -->
@@ -29,10 +29,21 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="site-name" href="/" data-site="name"></a>
-    <button type="button" class="menu-button" id="menu-button" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      <span class="menu-button-label">Menu</span>
-    </button>
+    <div class="header-tools">
+      <!-- Work / About / Contact, filled in by functions/_middleware.js (lib/chrome.js). -->
+      <nav class="site-nav" id="site-nav" aria-label="Main"></nav>
+      <div class="header-buttons">
+        <!-- Light / dark, shown and labelled by js/theme.js. -->
+        <button type="button" class="round-button theme-toggle" data-theme-toggle hidden aria-label="Switch to dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+        </button>
+        <button type="button" class="round-button menu-button" id="menu-button" aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <span class="menu-button-label">Menu</span>
+        </button>
+      </div>
+    </div>
   </header>
   <!-- The slide-in menu, filled in by functions/_middleware.js (lib/chrome.js)
        and opened by js/menu.js. -->
@@ -43,11 +54,11 @@
     <p class="draft-banner" id="draft-banner" hidden>
       Draft preview: only you can see this set. Publish it from the admin page.
     </p>
-    <a class="back-link" href="/"><span aria-hidden="true">←</span> All sets</a>
+    <a class="back-link" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>All sets</a>
     <div class="set-heading">
       <h1 id="set-title"></h1>
       <!-- Shares this set (see js/share.js). -->
-      <button type="button" class="share-button" data-share>
+      <button type="button" class="share-button pill pill-gray" data-share>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v8h14v-8"/></svg> Share
       </button>
     </div>
@@ -59,18 +70,24 @@
     <!-- Licensed downloads: shown by functions/sets/[slug].js only when the set has
          downloadable photos. set.js checks the code and shows Download buttons. -->
     <section class="license-panel" id="license-panel" hidden aria-labelledby="license-heading">
-      <h2 id="license-heading">Have a license code?</h2>
-      <p class="muted" id="license-help">Enter the code you received to download full-quality copies without the watermark.</p>
-      <form id="license-form" class="inline-form">
-        <label for="license-code" class="visually-hidden">License code</label>
-        <input id="license-code" type="text" placeholder="WL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
-        <button type="submit">Unlock</button>
-      </form>
-      <p class="form-error" id="license-error" role="alert"></p>
-      <!-- Shown after a code is accepted: every downloadable photo in one .zip file. -->
-      <div class="license-actions-row" id="download-all-row" hidden>
-        <button type="button" id="download-all">Download all</button>
-        <span class="muted" id="download-all-status" role="status"></span>
+      <div class="license-text">
+        <h2 id="license-heading">Have a license code?</h2>
+        <p class="muted" id="license-help">Enter the code you received to download full-quality copies without the watermark.</p>
+      </div>
+      <div class="license-form-area">
+        <form id="license-form" class="inline-form">
+          <div class="license-field">
+            <label for="license-code">License code</label>
+            <input id="license-code" type="text" placeholder="WL-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+          </div>
+          <button type="submit" class="pill">Unlock</button>
+        </form>
+        <p class="form-error" id="license-error" role="alert"></p>
+        <!-- Shown after a code is accepted: every downloadable photo in one .zip file. -->
+        <div class="license-actions-row" id="download-all-row" hidden>
+          <button type="button" class="pill" id="download-all">Download all</button>
+          <span class="muted" id="download-all-status" role="status"></span>
+        </div>
       </div>
     </section>
 

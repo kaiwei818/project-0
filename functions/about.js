@@ -20,12 +20,20 @@ export async function onRequestGet({ request, env }) {
     : `<p class="muted">More about me is coming soon.</p>`;
 
   const contact = contactItems(about).map((item) => link(item.href, item.label, item.shown));
+  const gear = gearItems(about.about_gear);
 
   const portrait = about.about_portrait_key ? portraitHtml(about) : "";
 
   const filled = new HTMLRewriter()
     .on("#about-bio", { element(el) { el.setInnerContent(bioHtml, { html: true }); } })
     .on("#about-contact", { element(el) { el.setInnerContent(contact.join(""), { html: true }); } })
+    .on("#about-gear", {
+      element(el) {
+        if (gear.length) el.setInnerContent(gear.join(""), { html: true });
+        else el.remove();
+      },
+    })
+    .on("#gear-heading", { element(el) { if (!gear.length) el.remove(); } })
     .on("#contact-heading", { element(el) { if (!contact.length) el.remove(); } })
     .on("#about-portrait", {
       element(el) {
@@ -48,6 +56,17 @@ function link(href, label, shown) {
   const external = externalAttrs(href);
   return `<li><span class="contact-label">${escapeHtml(label)}</span>` +
     `<a href="${escapeHtml(href)}"${external}>${escapeHtml(shown)}</a></li>`;
+}
+
+// One item per line. "Camera: Sony A7 IV" shows "Camera" as a small label in
+// front, like the contact details; a line without a colon shows as it is.
+function gearItems(text) {
+  return text.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
+    const match = line.match(/^([^:]{1,30}):\s*(.+)$/);
+    return match
+      ? `<li><span class="contact-label">${escapeHtml(match[1].trim())}</span><span>${escapeHtml(match[2])}</span></li>`
+      : `<li><span>${escapeHtml(line)}</span></li>`;
+  });
 }
 
 function portraitHtml(about) {

@@ -1037,8 +1037,10 @@ body.is-dragging * { cursor: grabbing !important; user-select: none; }
 .about-bio { max-width: 62ch; color: var(--text-soft); }
 .about-bio p { line-height: 1.7; }
 .about h2 { font-size: 1rem; font-weight: 500; margin-top: 32px; }
-.about-contact { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.about-contact li { display: flex; gap: 12px; flex-wrap: wrap; }
+.about-contact,
+.about-gear { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.about-contact li,
+.about-gear li { display: flex; gap: 12px; flex-wrap: wrap; align-items: baseline; }
 .contact-label { min-width: 90px; color: var(--muted); font-size: 0.875rem; font-weight: 500; }
 /* The text-only layout when there is no portrait yet. */
 .about:not(:has(.about-portrait)) { grid-template-columns: minmax(0, 1fr); }

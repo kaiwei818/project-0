@@ -1,7 +1,7 @@
-// Admin page for the About page: bio, contact details, and portrait.
+// Admin page for the About page: bio, gear, contact details, and portrait.
 
 const $ = (id) => document.getElementById(id);
-const FIELDS = ["bio", "email", "instagram", "link_label", "link_url"];
+const FIELDS = ["bio", "gear", "email", "instagram", "link_label", "link_url"];
 let about = null;
 
 async function load() {

@@ -1,5 +1,5 @@
 // GET   /api/admin/about   the About page settings, for the admin form
-// PATCH /api/admin/about   save bio and contact details (any of the fields below)
+// PATCH /api/admin/about   save bio, gear, and contact details (any of the fields below)
 
 import { ABOUT_KEYS, getSettings, saveSettings } from "../../../../lib/settings.js";
 
@@ -13,6 +13,7 @@ export async function onRequestPatch({ request, env }) {
   const text = (value, max) => String(value ?? "").trim().slice(0, max);
 
   if ("bio" in body) changes.about_bio = text(body.bio, 5000);
+  if ("gear" in body) changes.about_gear = text(body.gear, 2000);
 
   if ("email" in body) {
     const email = text(body.email, 200);

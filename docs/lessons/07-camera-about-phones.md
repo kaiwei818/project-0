@@ -76,6 +76,7 @@ Edit it in the admin area: on the dashboard click **About page**.
 |---|---|
 | Portrait | Your photo, left of the text (above it on phones) |
 | Bio | Paragraphs. Leave an empty line between paragraphs |
+| Gear | A list under your bio, one item per line. `Camera: Sony A7 IV` shows "Camera" as a small label in front, like the contact details |
 | Email | A link that opens the visitor's email app |
 | Instagram | `@yourname`, linking to your profile. Type it with or without `@`, or paste the link |
 | Other link | Any https:// address with a name, for example LINE or YouTube |

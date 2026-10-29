@@ -78,14 +78,16 @@ Edit it in the admin area: on the dashboard click **About page**.
 | Bio | Paragraphs. Leave an empty line between paragraphs |
 | Gear | A list under your bio, one item per line. `Camera: Sony A7 IV` shows "Camera" as a small label in front, like the contact details |
 | Email | A link that opens the visitor's email app |
+| Phone | A link that calls the number when tapped on a phone. Start with `+` and your country code (`+886 ...`) so it also works for visitors abroad |
 | Instagram | `@yourname`, linking to your profile. Type it with or without `@`, or paste the link |
 | Other link | Any https:// address with a name, for example LINE or YouTube |
 
 Everything saves by itself when you click outside a box. Empty fields are simply
 not shown; with no bio yet, the page says "More about me is coming soon."
 
-**Good to know:** an email address on a public page can attract some spam. If
-that becomes a problem, leave Email empty and use Instagram or a contact link.
+**Good to know:** an email address or phone number on a public page can attract
+some spam or unwanted calls. If that becomes a problem, empty that box and use
+Instagram or a contact link.
 
 ### How it works
 

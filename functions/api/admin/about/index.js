@@ -23,6 +23,17 @@ export async function onRequestPatch({ request, env }) {
     changes.about_email = email;
   }
 
+  if ("phone" in body) {
+    // Shown as you typed it. Only digits, spaces, and + - ( ) . are allowed,
+    // with 6 to 15 digits (the longest phone numbers in the world have 15).
+    const phone = text(body.phone, 40);
+    const digits = phone.replace(/\D/g, "").length;
+    if (phone && (!/^\+?[\d\s().-]+$/.test(phone) || digits < 6 || digits > 15)) {
+      return Response.json({ error: "That phone number does not look right." }, { status: 400 });
+    }
+    changes.about_phone = phone;
+  }
+
   if ("instagram" in body) {
     // Accept "@winstonlens", "winstonlens", or a full instagram.com link.
     const name = text(body.instagram, 200)

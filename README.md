@@ -195,7 +195,7 @@ Admin (login required; writes must come from this site):
 - `PATCH`, `DELETE /api/admin/photos/:id`: caption, alt text, camera details, remove clean copy, delete
 - `GET`, `POST /api/admin/licenses`; `PATCH`, `DELETE /api/admin/licenses/:id`: license codes
 - `GET`, `POST /api/admin/categories`; `DELETE /api/admin/categories/:id`: categories
-- `GET`, `PATCH /api/admin/about`: About page bio, gear, and contact details
+- `GET`, `PATCH /api/admin/about`: About page bio, gear, and contact details (email, phone, Instagram, one link)
 - `POST`, `DELETE /api/admin/about/portrait`: About page portrait
 
 ## Honest limits
